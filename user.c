@@ -121,6 +121,7 @@ bool nclogin_user_exec(login_info_t *info)
             if (!nclogin_ctty_pgrp())
               failure("Failed to activate main process group: %m\n");
           }
+          nclogin_utmp_user(NULL, pid);
         }
         else
           failure("Failed to fork a child process: %m\n");
@@ -131,7 +132,7 @@ bool nclogin_user_exec(login_info_t *info)
       failure("Must be session leader to wait for termination\n");
   }
 
-  nclogin_utmp_user(info->name);
+  nclogin_utmp_user(info->name, 0);
 
   if (initgroups(info->name, info->gid) < 0)
     failure("Failed to assign supplementary groups: %m\n");
