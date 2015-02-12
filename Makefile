@@ -11,7 +11,7 @@ NCLOGIN_CFLAGS=-std=c99 -Wall -Werror -Wextra -Wno-unused-parameter
 NCLOGIN_LDFLAGS=-Wl,--as-needed
 NCLOGIN_LIBS=-lform -lncurses -lcrypt
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-NCLOGIN_SOURCES=main.c form.c auth.c ctty.c utmp.c user.c
+NCLOGIN_SOURCES=main.c form.c auth.c ctty.c utmp.c user.c util.c
 #------------------------------------------------------------------------------#
 .PHONY: all clean
 .SUFFIXES:
