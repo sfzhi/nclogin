@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:i:T:u::WmbBawsl";
+  static const char optstr[] = "+:t:L:n:i:T:u::WmbBawslk";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -146,6 +146,9 @@ int main(int argc, char *argv[])
       break;
     case 'l':
       nclogin_config.loginshell = true;
+      break;
+    case 'k':
+      nclogin_config.killorphan = true;
       break;
     case '?':
       error(1, 0, "Unknown command line option: -%c", optopt);

@@ -10,6 +10,8 @@
 #include <errno.h>
 #include <grp.h> // initgroups()
 #include <sys/wait.h>
+#include <sys/prctl.h> // prctl()
+#include <signal.h> // raise(), SIG*
 /*============================================================================*/
 static char *makeenv(char *envbuf, size_t size, char **envp, ...)
 {
@@ -111,6 +113,13 @@ bool nclogin_user_exec(login_info_t *info)
             failure("Failed to create new process group: %m\n");
           else if (!nclogin_ctty_pgrp())
             failure("Failed to activate user process group: %m\n");
+        }
+        if (nclogin_config.killorphan)
+        {
+          if (prctl(PR_SET_PDEATHSIG, SIGTERM, 0, 0, 0) < 0)
+            failure("Failed to setup parent death signal: %m\n");
+          if ((getppid() == 1) && (raise(SIGTERM) != 0))
+            failure("Failed to send SIGTERM to itself: %m\n");
         }
       }
       else

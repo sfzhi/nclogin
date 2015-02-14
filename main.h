@@ -31,6 +31,7 @@ typedef struct {
   bool subprocess;
   bool newsession;
   bool loginshell;
+  bool killorphan;
 } config_data_t;
 /*============================================================================*/
 extern config_data_t nclogin_config;
