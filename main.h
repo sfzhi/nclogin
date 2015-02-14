@@ -30,6 +30,7 @@ typedef struct {
   bool adjustctty;
   bool subprocess;
   bool newsession;
+  bool skipsetuid;
   bool loginshell;
   bool killorphan;
 } config_data_t;

@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:i:T:u::WmbBawslk";
+  static const char optstr[] = "+:t:L:n:i:T:u::WmbBawsSlk";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -143,6 +143,9 @@ int main(int argc, char *argv[])
       break;
     case 's':
       nclogin_config.newsession = true;
+      break;
+    case 'S':
+      nclogin_config.skipsetuid = true;
       break;
     case 'l':
       nclogin_config.loginshell = true;

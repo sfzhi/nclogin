@@ -168,14 +168,17 @@ bool nclogin_user_exec(login_info_t *info)
 
   nclogin_utmp_user(info->name, 0);
 
-  if (initgroups(info->name, info->gid) < 0)
-    failure("Failed to assign supplementary groups: %m\n");
-  if (setgid(info->gid) < 0)
-    failure("Failed to assign primary user group: %m\n");
-  if (setuid(info->uid) < 0)
-    failure("Failed to switch user to '%s': %m\n", info->name);
-  if ((info->home != NULL) && (chdir(info->home) < 0))
-    failure("Failed to change to home directory: %m\n");
+  if (!nclogin_config.skipsetuid)
+  {
+    if (initgroups(info->name, info->gid) < 0)
+      failure("Failed to assign supplementary groups: %m\n");
+    if (setgid(info->gid) < 0)
+      failure("Failed to assign primary user group: %m\n");
+    if (setuid(info->uid) < 0)
+      failure("Failed to switch user to '%s': %m\n", info->name);
+    if ((info->home != NULL) && (chdir(info->home) < 0))
+      failure("Failed to change to home directory: %m\n");
+  }
 
   execute(info);
   _exit(1);
