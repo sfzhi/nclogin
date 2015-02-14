@@ -126,8 +126,25 @@ bool nclogin_user_exec(login_info_t *info)
       {
         if (pid > 0)
         {
+          pid_t wpid;
           int status = 0;
-          waitpid(pid, &status, 0);
+          do {
+            wpid = waitpid(pid, &status, 0);
+          } while ((wpid < 0) && (errno == EINTR));
+
+          if (wpid < 0)
+            failure("Failed to wait for child process: %m\n");
+          else if (wpid != pid)
+            failure("Waiting returned unexpected PID: %d\n", (int)wpid);
+          else if (WIFEXITED(status))
+            infomsg("Child process terminated with exit code %d\n",
+              WEXITSTATUS(status));
+          else if (WIFSIGNALED(status))
+            warning("Child process killed by signal #%d (%s)\n",
+              WTERMSIG(status), strsignal(WTERMSIG(status)));
+          else
+            warning("Child process terminated, status=%d\n", status);
+
           if (nclogin_config.newsession)
           {
             if (!nclogin_ctty_grab())
