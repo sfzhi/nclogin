@@ -177,6 +177,7 @@ static bool check_creds(login_info_t *info, dialog_data_t *data)
 /*----------------------------------------------------------------------------*/
 static inline bool input_error(void)
 {
+  failure("Error while processing form input events: %m\n");
   return true;
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
