@@ -74,7 +74,15 @@ static void execute(login_info_t *info)
   const char *shbin = (info->exec != NULL)? info->exec: "/bin/sh";
   if (*shbin == '/')
   {
-    char *args[] = {(char *)shbin, NULL};
+    const char *base = shbin;
+    if (nclogin_config.loginshell)
+      base = strrchr(base, '/');
+    size_t len = strlen(base) + 1;
+    char argv0[len];
+    memcpy(argv0, base, len);
+    if (nclogin_config.loginshell)
+      argv0[0] = '-';
+    char *args[] = {argv0, NULL};
     execve(shbin, args, uenv);
   }
   else
