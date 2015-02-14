@@ -358,7 +358,10 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
 static void clrscr(void)
 {
   if (nclogin_config.wipescreen)
+  {
     putp(clear_screen);
+    fflush(stdout);
+  }
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 int nclogin_form_main(login_info_t *info)
