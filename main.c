@@ -31,6 +31,11 @@ void message(msg_type_t type, const char *format, ...)
   va_end(params);
 }
 /*============================================================================*/
+void nclogin_main_undo(void)
+{
+  closelog();
+}
+/*============================================================================*/
 static void setup_signals(void)
 {
   signal(SIGHUP, SIG_IGN);

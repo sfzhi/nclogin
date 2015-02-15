@@ -50,3 +50,5 @@ extern void message(msg_type_t type, const char *format, ...);
 #define authmsg(fmt, ...) message(msgt_AUTHMSG, fmt, ##__VA_ARGS__)
 #define autherr(fmt, ...) message(msgt_AUTHERR, fmt, ##__VA_ARGS__)
 /*============================================================================*/
+void nclogin_main_undo(void);
+/*============================================================================*/

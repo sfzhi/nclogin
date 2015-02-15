@@ -180,6 +180,7 @@ bool nclogin_user_exec(login_info_t *info)
       failure("Failed to change to home directory: %m\n");
   }
 
+  nclogin_main_undo();
   execute(info);
   _exit(1);
 }
