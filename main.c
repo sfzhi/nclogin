@@ -60,6 +60,12 @@ static int execute(void)
   setlocale(LC_ALL, (nclogin_config.lang != NULL)? nclogin_config.lang: "");
   openlog(program_invocation_short_name, LOG_PID|LOG_CONS, LOG_DAEMON);
 
+  if (nclogin_config.skipsetuid && (nclogin_config.exec == NULL))
+  {
+    warning("Will not run default user shell as superuser\n");
+    nclogin_config.skipsetuid = false;
+  }
+
   if (nclogin_config.name == NULL)
   {
     static char hostname[HOST_NAME_MAX + 1];
