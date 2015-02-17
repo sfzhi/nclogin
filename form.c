@@ -29,12 +29,12 @@ enum {
 };
 /*----------------------------------------------------------------------------*/
 typedef struct {
-  WINDOW *win;
-  FORM *form;
+  WINDOW  *win;
+  FORM   *form;
   FIELD *field;
-  int current;
-  int insmode;
-  int changed;
+  int curindex;
+  bool insmode;
+  bool changed;
   struct {
     int screen;
     int window;
@@ -185,8 +185,8 @@ static void field_enter(FORM *form)
 {
   dialog_data_t *data = form_userptr(form);
   data->field = current_field(form);
-  data->current = field_index(data->field);
-  switch (data->current)
+  data->curindex = field_index(data->field);
+  switch (data->curindex)
   {
   case fi_LI:
   case fi_PI:
@@ -203,13 +203,13 @@ static void field_enter(FORM *form)
     break;
   default:;
   }
-  data->changed = 1;
+  data->changed = true;
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 static void field_leave(FORM *form)
 {
   dialog_data_t *data = form_userptr(form);
-  switch (data->current)
+  switch (data->curindex)
   {
   case fi_LI:
   case fi_PI:
@@ -223,8 +223,8 @@ static void field_leave(FORM *form)
   default:;
   }
   data->field = NULL;
-  data->current = -1;
-  data->changed = 0;
+  data->curindex = -1;
+  data->changed = false;
 }
 /*----------------------------------------------------------------------------*/
 static size_t field_value(FIELD *field, char *out, size_t max)
@@ -309,7 +309,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
       code = REQ_UP_FIELD;
       break;
     case KEY_DOWN:
-      code = (data->current == fi_PI)? REQ_NEXT_FIELD: REQ_DOWN_FIELD;
+      code = (data->curindex == fi_PI)? REQ_NEXT_FIELD: REQ_DOWN_FIELD;
       break;
     case '\t':
       code = REQ_NEXT_FIELD;
@@ -322,7 +322,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
       break;
     case KEY_ENTER:
     case '\n':
-      switch (data->current)
+      switch (data->curindex)
       {
       case fi_LI:
         code = REQ_NEXT_FIELD;
@@ -349,7 +349,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
         result = fres_ABANDON;
       break;
     default:
-      switch (data->current)
+      switch (data->curindex)
       {
       case fi_LI:
         switch (ch)
@@ -418,7 +418,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
           code = REQ_RIGHT_FIELD;
           break;
         case ' ':
-          result = (data->current == fi_SB)? fres_SHUTDOWN: fres_REBOOT;
+          result = (data->curindex == fi_SB)? fres_SHUTDOWN: fres_REBOOT;
           break;
         default:;
         }
@@ -430,7 +430,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
       form_driver(data->form, code);
     if (data->changed)
     {
-      switch (data->current)
+      switch (data->curindex)
       {
       case fi_PI:
         pwedit_reset(&pwedit);
@@ -444,7 +444,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
         break;
       default:;
       }
-      data->changed = 0;
+      data->changed = false;
     }
   } while (result < 0);
   return result;
@@ -467,8 +467,8 @@ int nclogin_form_main(login_info_t *info)
     .win = NULL,
     .form = NULL,
     .field = NULL,
-    .current = -1,
-    .insmode = 1,
+    .curindex = -1,
+    .insmode = true,
   };
 
   if (!nclogin_config.monochrome && has_colors())
