@@ -9,6 +9,8 @@
 #include <form.h>
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <errno.h>
+#include <wchar.h> // mbrlen()
+#include <wctype.h> // iswprint()
 #include <unistd.h> // STDOUT_FILENO
 /*============================================================================*/
 #define MAX_USERNAME_LEN 24
@@ -44,11 +46,93 @@ typedef struct {
     int errmsg;
   } attrs;
 } dialog_data_t;
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+typedef struct {
+  unsigned char chars[MAX_PASSWORD_LEN];
+  mbstate_t mbstate;
+  unsigned int cpos;
+  unsigned int bpos;
+  char bytes[256];
+} pwedit_data_t;
 /*============================================================================*/
 void nclogin_form_init(void)
 {
   if (nclogin_config.wipescreen)
     setupterm(NULL, STDOUT_FILENO, NULL);
+}
+/*============================================================================*/
+static void pwedit_reset(pwedit_data_t *data)
+{
+  mbrlen(NULL, 0, &data->mbstate);
+  data->bpos -= data->chars[data->cpos];
+  data->chars[data->cpos] = 0;
+}
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+static void pwedit_clear(pwedit_data_t *data)
+{
+  mbrlen(NULL, 0, &data->mbstate);
+  data->bpos = data->cpos = 0;
+  data->chars[data->cpos] = 0;
+}
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+static void pwedit_erase(pwedit_data_t *data)
+{
+  if (data->cpos > 0)
+    data->bpos -= data->chars[data->cpos--];
+  pwedit_reset(data);
+}
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+static bool pwedit_store(pwedit_data_t *data, char ch)
+{
+  if (data->bpos < sizeof(data->bytes))
+  {
+    data->bytes[data->bpos++] = ch;
+    data->chars[data->cpos]++;
+    return true;
+  }
+  return false;
+}
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+static bool pwedit_input(pwedit_data_t *data, int code)
+{
+  if ((code >= 0) && (code <= 0xFF) && (data->cpos < MAX_PASSWORD_LEN))
+  {
+    wchar_t wc;
+    char ch = (unsigned char)code;
+    switch ((ssize_t)mbrtowc(&wc, &ch, 1, &data->mbstate))
+    {
+    case -2:
+      if (pwedit_store(data, ch))
+        break;
+      //no break;
+    case -1:
+      pwedit_reset(data);
+      break;
+    case 0:
+      break;
+    case 1:
+      if (iswprint(wc) && pwedit_store(data, ch))
+      {
+        data->chars[++data->cpos] = 0;
+        return true;
+      }
+      break;
+    default:;
+    }
+  }
+  return false;
+}
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+static const char *pwedit_value(pwedit_data_t *data)
+{
+  pwedit_reset(data);
+  if (data->bpos < sizeof(data->bytes))
+  {
+    data->bytes[data->bpos] = '\0';
+    return data->bytes;
+  }
+  else
+    return NULL;
 }
 /*============================================================================*/
 static void resize_form(dialog_data_t *data)
@@ -160,15 +244,17 @@ static size_t field_value(FIELD *field, char *out, size_t max)
   return len;
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-static bool check_creds(login_info_t *info, dialog_data_t *data)
+static bool check_creds(login_info_t *info, dialog_data_t *data,
+  pwedit_data_t *pwedit)
 {
   int result = 0;
-  char login[256], passw[256];
+  char login[256];
   FIELD **fields = form_fields(data->form);
   if (field_value(fields[fi_LI], login, sizeof(login)) > 0)
   {
-    field_value(fields[fi_PI], passw, sizeof(passw));
-    result = nclogin_auth_user(info, login, passw);
+    const char *passw = pwedit_value(pwedit);
+    if (passw != NULL)
+      result = nclogin_auth_user(info, login, passw);
   }
   if (result <= 0)
     error_popup(data, "Authentication failed!");
@@ -197,6 +283,9 @@ static int backspace(dialog_data_t *data)
 static int input_loop(dialog_data_t *data, login_info_t *info)
 {
   int result = -1;
+  pwedit_data_t pwedit;
+  memset(&pwedit, 0, sizeof(pwedit));
+  mbrlen(NULL, 0, &pwedit.mbstate);
   do {
     errno = 0;
     int ch = wgetch(data->win);
@@ -239,11 +328,11 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
         code = REQ_NEXT_FIELD;
         break;
       case fi_PI:
-        form_driver(data->form, REQ_VALIDATION);
-        if (check_creds(info, data))
+        if (check_creds(info, data, &pwedit))
           result = fres_SUCCESS;
         else
           code = REQ_CLR_FIELD;
+        pwedit_clear(&pwedit);
         break;
       case fi_SB:
         result = fres_SHUTDOWN;
@@ -297,9 +386,11 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
         case KEY_BACKSPACE:
         case '\x7F': // Del
         case '\b':
+          pwedit_erase(&pwedit);
           code = backspace(data);
           break;
         case KEY_DC:
+          pwedit_clear(&pwedit);
           code = REQ_CLR_FIELD;
           break;
         case KEY_END:
@@ -311,7 +402,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
         case KEY_RIGHT:
           break;
         default:
-          code = ch;
+          code = pwedit_input(&pwedit, ch)? '*': ERR;
         }
         break;
       case fi_SB:
@@ -339,8 +430,10 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
     {
       switch (data->current)
       {
-      case fi_LI:
       case fi_PI:
+        pwedit_reset(&pwedit);
+        //no break;
+      case fi_LI:
         form_driver(data->form, REQ_END_FIELD);
         break;
       case fi_SB:
