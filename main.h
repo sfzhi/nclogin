@@ -27,6 +27,7 @@ typedef struct {
   bool monochrome;
   bool background;
   bool checkboard;
+  bool enablequit;
   bool updateutmp;
   bool adjustctty;
   bool subprocess;

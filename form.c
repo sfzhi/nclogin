@@ -345,6 +345,8 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
       break;
     case KEY_EXIT:
     case '\x1B': // Esc
+      if (nclogin_config.enablequit)
+        result = fres_ABANDON;
       break;
     default:
       switch (data->current)
