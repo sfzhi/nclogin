@@ -20,6 +20,7 @@ typedef struct {
   const char *lang;
   const char *name;
   const char *init;
+  const char *exec;
   const char *ctty;
   const char *utid;
   bool wipescreen;

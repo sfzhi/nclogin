@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:i:T:u::WmbBawsSlk";
+  static const char optstr[] = "+:t:L:n:i:e:T:u::WmbBawsSlk";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -120,6 +120,9 @@ int main(int argc, char *argv[])
       break;
     case 'i':
       nclogin_config.init = optarg;
+      break;
+    case 'e':
+      nclogin_config.exec = optarg;
       break;
     case 'T':
       nclogin_config.ctty = optarg;

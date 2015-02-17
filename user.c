@@ -73,7 +73,8 @@ static void execute(login_info_t *info)
   if (tail == NULL)
     failure("Insufficient buffer space for user environment\n");
 
-  const char *shbin = (info->exec != NULL)? info->exec: "/bin/sh";
+  const char *shbin = (nclogin_config.exec != NULL)?
+    nclogin_config.exec: (info->exec != NULL)? info->exec: "/bin/sh";
   if (*shbin == '/')
   {
     const char *base = shbin;
