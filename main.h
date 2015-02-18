@@ -28,6 +28,7 @@ typedef struct {
   bool background;
   bool checkboard;
   bool enablequit;
+  bool restricted;
   bool updateutmp;
   bool adjustctty;
   bool subprocess;

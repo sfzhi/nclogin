@@ -491,6 +491,8 @@ int nclogin_form_main(login_info_t *info)
     data.attrs.button = COLOR_PAIR(2)|A_BOLD;
     data.attrs.bfocus = COLOR_PAIR(5);
     data.attrs.errmsg = COLOR_PAIR(6)|A_BOLD;
+    if (nclogin_config.restricted)
+      data.attrs.button &= ~A_BOLD;
   }
   else
   {
@@ -540,6 +542,9 @@ int nclogin_form_main(login_info_t *info)
     NULL
   };
 
+  Field_Options button_field_opts = nclogin_config.restricted?
+    O_VISIBLE|O_PUBLIC|O_STATIC: O_VISIBLE|O_ACTIVE|O_PUBLIC|O_STATIC;
+
   set_field_back(fields[fi_LL], data.attrs.window);
   set_field_opts(fields[fi_LL], O_VISIBLE|O_PUBLIC|O_STATIC);
   set_field_buffer(fields[fi_LL], 0, "Login:");
@@ -557,11 +562,11 @@ int nclogin_form_main(login_info_t *info)
   set_max_field(fields[fi_PI], MAX_PASSWORD_LEN);
 
   set_field_back(fields[fi_SB], data.attrs.button);
-  set_field_opts(fields[fi_SB], O_VISIBLE|O_ACTIVE|O_PUBLIC|O_STATIC);
+  set_field_opts(fields[fi_SB], button_field_opts);
   set_field_buffer(fields[fi_SB], 0, "[ Shutdown ]");
 
   set_field_back(fields[fi_RB], data.attrs.button);
-  set_field_opts(fields[fi_RB], O_VISIBLE|O_ACTIVE|O_PUBLIC|O_STATIC);
+  set_field_opts(fields[fi_RB], button_field_opts);
   set_field_buffer(fields[fi_RB], 0, "[  Reboot  ]");
 
   if (nclogin_config.init != NULL)
