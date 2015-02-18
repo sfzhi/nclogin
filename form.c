@@ -34,6 +34,7 @@ typedef struct {
   FIELD *field;
   int curindex;
   bool insmode;
+  bool started;
   bool changed;
   struct {
     int screen;
@@ -203,7 +204,8 @@ static void field_enter(FORM *form)
     break;
   default:;
   }
-  data->changed = true;
+  if (data->started)
+    data->changed = true;
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 static void field_leave(FORM *form)
@@ -286,6 +288,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
   pwedit_data_t pwedit;
   memset(&pwedit, 0, sizeof(pwedit));
   mbrlen(NULL, 0, &pwedit.mbstate);
+  data->started = true;
   do {
     errno = 0;
     int ch = wgetch(data->win);
