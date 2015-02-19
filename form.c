@@ -61,6 +61,15 @@ void nclogin_form_init(void)
   if (nclogin_config.wipescreen)
     setupterm(NULL, STDOUT_FILENO, NULL);
 }
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+static void clrscr(void)
+{
+  if (nclogin_config.wipescreen)
+  {
+    putp(clear_screen);
+    fflush(stdout);
+  }
+}
 /*============================================================================*/
 static void pwedit_reset(pwedit_data_t *data)
 {
@@ -451,15 +460,6 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
     }
   } while (result < 0);
   return result;
-}
-/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-static void clrscr(void)
-{
-  if (nclogin_config.wipescreen)
-  {
-    putp(clear_screen);
-    fflush(stdout);
-  }
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 int nclogin_form_main(login_info_t *info)
