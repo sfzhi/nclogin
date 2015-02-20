@@ -172,3 +172,41 @@ bool nclogin_ctty_pgrp(void)
   return false;
 }
 /*============================================================================*/
+static struct {uid_t uid; gid_t gid; mode_t mode; bool valid;} saved_state;
+/*----------------------------------------------------------------------------*/
+void nclogin_ctty_user(uid_t uid, gid_t gid, mode_t mode)
+{
+  if (nclogin_config.adjustperm && (cttypath != NULL))
+  {
+    if (!saved_state.valid)
+    {
+      struct stat st;
+      if (stat(cttypath, &st) >= 0)
+      {
+        saved_state.uid = st.st_uid;
+        saved_state.gid = st.st_gid;
+        saved_state.mode = st.st_mode;
+        saved_state.valid = true;
+      }
+      else
+        return;
+    }
+    if ((mode != 0) && (chmod(cttypath, mode) < 0))
+      failure("Failed to adjust controlling TTY permissions: %m");
+    if (chown(cttypath, uid, gid) < 0)
+      failure("Failed to adjust controlling TTY ownership: %m");
+  }
+}
+/*----------------------------------------------------------------------------*/
+void nclogin_ctty_back(void)
+{
+  if (saved_state.valid)
+  {
+    if (chmod(cttypath, saved_state.mode) < 0)
+      failure("Failed to restore controlling TTY permissions: %m");
+    if (chown(cttypath, saved_state.uid, saved_state.gid) < 0)
+      failure("Failed to restore controlling TTY ownership: %m");
+    saved_state.valid = false;
+  }
+}
+/*============================================================================*/

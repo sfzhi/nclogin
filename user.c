@@ -156,6 +156,7 @@ bool nclogin_user_exec(login_info_t *info)
             if (!nclogin_ctty_pgrp())
               failure("Failed to activate main process group: %m\n");
           }
+          nclogin_ctty_back();
           nclogin_utmp_user(NULL, pid);
         }
         else
@@ -168,6 +169,7 @@ bool nclogin_user_exec(login_info_t *info)
   }
 
   nclogin_utmp_user(info->name, 0);
+  nclogin_ctty_user(info->uid, info->gid, 0);
 
   if (!nclogin_config.skipsetuid)
   {
