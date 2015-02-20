@@ -30,7 +30,7 @@ typedef struct {
   bool enablequit;
   bool restricted;
   bool updateutmp;
-  bool adjustctty;
+  bool adjustperm;
   bool subprocess;
   bool newsession;
   bool skipsetuid;
