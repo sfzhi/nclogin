@@ -25,9 +25,30 @@ config_data_t nclogin_config;
 /*============================================================================*/
 void message(msg_type_t type, const char *format, ...)
 {
+  int priority;
+  switch (type)
+  {
+  case msgt_INFOMSG:
+    priority = LOG_INFO;
+    break;
+  case msgt_WARNING:
+    priority = LOG_WARNING;
+    break;
+  case msgt_FAILURE:
+    priority = LOG_ERR;
+    break;
+  case msgt_AUTHMSG:
+    priority = LOG_AUTH|LOG_INFO;
+    break;
+  case msgt_AUTHERR:
+    priority = LOG_AUTH|LOG_ERR;
+    break;
+  default:
+    priority = LOG_INFO;
+  }
   va_list params;
   va_start(params, format);
-  vsyslog(LOG_ERR, format, params);
+  vsyslog(priority, format, params);
   va_end(params);
 }
 /*============================================================================*/
