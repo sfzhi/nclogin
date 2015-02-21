@@ -38,13 +38,13 @@ int nclogin_auth_user(login_info_t *info, const char *login, const char *passw)
     else if (errno == 0)
       authmsg("Failed to lookup shadow entry for '%s'\n", login);
     else
-      authmsg("Failed to lookup shadow entry for '%s': %m\n", login);
+      autherr("Failed to lookup shadow entry for '%s': %m\n", login);
     endspent();
   }
   else if (errno == 0)
     authmsg("User account '%s' does not exist\n", login);
   else
-    authmsg("Failed to lookup user '%s': %m\n", login);
+    autherr("Failed to lookup user '%s': %m\n", login);
   endpwent();
   return result;
 }
