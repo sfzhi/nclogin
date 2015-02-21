@@ -90,6 +90,7 @@ static void execute(login_info_t *info)
   }
   else
     errno = EINVAL;
+  failure("Failed to execute user shell or wrapper '%s': %m\n", shbin);
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 bool nclogin_user_exec(login_info_t *info)
