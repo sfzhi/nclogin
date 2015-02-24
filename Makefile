@@ -7,7 +7,7 @@ ifeq ($(filter-out undefined default,$(origin CC)),)
 CC=gcc
 endif
 #------------------------------------------------------------------------------#
-NCLOGIN_CFLAGS=-std=c99 -Wall -Werror -Wextra -Wno-unused-parameter
+NCLOGIN_CFLAGS=-std=c99 -Wall -Werror -Wextra -Wno-unused-parameter -fno-common
 NCLOGIN_LDFLAGS=-Wl,--as-needed
 NCLOGIN_LIBS=-lform -lncurses -lcrypt
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
