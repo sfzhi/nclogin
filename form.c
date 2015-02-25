@@ -162,15 +162,17 @@ static void resize_both(dialog_data_t *data)
   nodelay(data->win, FALSE);
 }
 /*============================================================================*/
-static void error_popup(dialog_data_t *data, const char *msg)
+static bool modal_popup(dialog_data_t *data, const char *msg, bool query)
 {
-  curs_set(0);
   WINDOW *win;
+  bool result = false;
+  int cstate = curs_set(0);
   size_t len = strlen(msg);
 repeat:
   win = newwin(3, SIZE_W - 4, (LINES - 3) / 2, (COLS - SIZE_W + 4) / 2);
   wbkgd(win, data->attrs.errmsg);
   leaveok(win, TRUE);
+  keypad(win, TRUE);
   box(win, 0, 0);
   mvwaddstr(win, 1, (SIZE_W - 4 - len) / 2, msg);
   wrefresh(win);
@@ -178,17 +180,45 @@ repeat:
   bkgd(data->attrs.screen);
 
   int ch;
+  bool loop = true;
   do {
-    ch = wgetch(win);
-    if (ch == KEY_RESIZE)
+    errno = 0;
+    switch (ch = wgetch(win))
     {
+    case ERR:
+      if ((errno != 0) && (errno != EINTR))
+        loop = false;
+      break;
+    case KEY_RESIZE:
       delwin(win);
       resize_both(data);
       goto repeat;
+    case KEY_ENTER:
+    case '\n':
+      if (query)
+        break;
+      //no break;
+    case ' ':
+      loop = false;
+      break;
+    case 'y':
+    case 'n':
+    case 'Y':
+    case 'N':
+      if (query)
+      {
+        result = (ch == 'y') || (ch == 'Y');
+        loop = false;
+      }
+      break;
+    default:;
     }
-  } while ((ch != ' ') && (ch != '\n') && (ch != KEY_ENTER));
+  } while (loop);
   delwin(win);
-  curs_set(1);
+  if (cstate != ERR)
+    curs_set(cstate);
+  wredrawln(data->win, 4, 3);
+  return result;
 }
 /*============================================================================*/
 static void field_enter(FORM *form)
@@ -268,8 +298,15 @@ static bool check_creds(login_info_t *info, dialog_data_t *data,
       result = nclogin_auth_user(info, login, passw);
   }
   if (result <= 0)
-    error_popup(data, "Authentication failed!");
+    modal_popup(data, "Authentication failed!", false);
   return result > 0;
+}
+/*----------------------------------------------------------------------------*/
+static void command(dialog_data_t *data, int *result)
+{
+  if (modal_popup(data, (data->curindex == fi_SB)?
+      "Really shutdown? (Y/N)": "Really reboot? (Y/N)", true))
+    *result = (data->curindex == fi_SB)? fres_SHUTDOWN: fres_REBOOT;
 }
 /*----------------------------------------------------------------------------*/
 static inline bool input_error(void)
@@ -347,10 +384,8 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
         pwedit_clear(&pwedit);
         break;
       case fi_SB:
-        result = fres_SHUTDOWN;
-        break;
       case fi_RB:
-        result = fres_REBOOT;
+        command(data, &result);
         break;
       default:;
       }
@@ -430,7 +465,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
           code = REQ_RIGHT_FIELD;
           break;
         case ' ':
-          result = (data->curindex == fi_SB)? fres_SHUTDOWN: fres_REBOOT;
+          command(data, &result);
           break;
         default:;
         }
