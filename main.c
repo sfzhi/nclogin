@@ -52,20 +52,32 @@ void message(msg_type_t type, const char *format, ...)
   va_end(params);
 }
 /*============================================================================*/
+static void ignore_signals(bool ignore)
+{
+  sighandler_t handler = ignore? SIG_IGN: SIG_DFL;
+  signal(SIGHUP, handler);
+  signal(SIGINT, handler);
+  signal(SIGPIPE, handler);
+  signal(SIGALRM, handler);
+  signal(SIGUSR1, handler);
+  signal(SIGUSR2, handler);
+  signal(SIGTSTP, handler);
+  signal(SIGTTIN, handler);
+  signal(SIGTTOU, handler);
+}
+/*============================================================================*/
 void nclogin_main_undo(void)
 {
+  ignore_signals(false);
   closelog();
 }
 /*============================================================================*/
 static void setup_signals(void)
 {
-  signal(SIGHUP, SIG_IGN);
-  signal(SIGINT, SIG_IGN);
-  signal(SIGQUIT, SIG_IGN);
-  signal(SIGPIPE, SIG_IGN);
-  signal(SIGALRM, SIG_IGN);
-  signal(SIGUSR1, SIG_IGN);
-  signal(SIGUSR2, SIG_IGN);
+  signal(SIGQUIT, SIG_DFL);
+  signal(SIGTERM, SIG_DFL);
+  signal(SIGCHLD, SIG_DFL);
+  ignore_signals(true);
 }
 /*============================================================================*/
 static int execute(void)
