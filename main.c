@@ -216,9 +216,8 @@ int main(int argc, char *argv[])
       error(1, 0, "Failed to process command line options");
     }
   }
-  if (optind < argc)
-    error(0, 0, "Unexpected command line argument: '%s'", argv[optind]);
-
+  nclogin_config.extraargv = argv + optind;
+  nclogin_config.extraargc = argc - optind;
   return execute();
 }
 /*============================================================================*/

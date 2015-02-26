@@ -23,6 +23,8 @@ typedef struct {
   const char *exec;
   const char *ctty;
   const char *utid;
+  char **extraargv;
+  int   extraargc;
   bool wipescreen;
   bool monochrome;
   bool background;
