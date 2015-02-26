@@ -86,7 +86,14 @@ static void execute(login_info_t *info)
     memcpy(argv0, base, len);
     if (nclogin_config.loginshell)
       argv0[0] = '-';
-    char *args[] = {argv0, NULL};
+    int nargs = 1;
+    if (nclogin_config.extraargc > 0)
+      nargs += nclogin_config.extraargc;
+    char *args[nargs + 1];
+    args[0] = argv0;
+    for (int i = 0; i < nclogin_config.extraargc; i++)
+      args[i + 1] = nclogin_config.extraargv[i];
+    args[nargs] = NULL;
     execve(shbin, args, uenv);
   }
   else
