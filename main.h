@@ -36,6 +36,7 @@ typedef struct {
   bool subprocess;
   bool newsession;
   bool skipsetuid;
+  bool exportctty;
   bool loginshell;
   bool killorphan;
 } config_data_t;

@@ -57,7 +57,7 @@ stop:   if (!name)
 /*----------------------------------------------------------------------------*/
 static void execute(login_info_t *info)
 {
-  char *uenv[8];
+  char *uenv[9];
   char envbuf[1024];
   const char *userpath =
     (info->uid == 0)? "/usr/bin:/bin:/usr/sbin:/sbin": "/usr/bin:/bin";
@@ -69,6 +69,7 @@ static void execute(login_info_t *info)
     "PATH", userpath,
     "TERM", nclogin_config.term,
     "LANG", nclogin_config.lang,
+    "CTTY", nclogin_config.exportctty? nclogin_config.ctty: NULL,
     NULL);
   if (tail == NULL)
     failure("Insufficient buffer space for user environment\n");
