@@ -5,6 +5,7 @@
 #include "form.h"
 #include "utmp.h"
 #include "user.h"
+#include "exec.h"
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <unistd.h> // getopt(), chdir(), gethostname()
 #include <stdlib.h> // setenv()
@@ -122,12 +123,10 @@ static int execute(void)
       loop = nclogin_user_exec(&login_info);
       break;
     case fres_SHUTDOWN:
-      printf("Shutdown\n");
-      loop = false;
+      loop = nclogin_exec_command(xcmd_SHUTDOWN);
       break;
     case fres_REBOOT:
-      printf("Reboot\n");
-      loop = false;
+      loop = nclogin_exec_command(xcmd_REBOOT);
       break;
     default:;
       loop = false;
