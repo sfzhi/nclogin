@@ -166,7 +166,7 @@ bool nclogin_user_exec(login_info_t *info)
               failure("Failed to activate main process group: %m\n");
           }
           nclogin_ctty_back();
-          nclogin_utmp_user(NULL, pid);
+          nclogin_utmp_user(NULL, 0, pid);
         }
         else
           failure("Failed to fork a child process: %m\n");
@@ -177,7 +177,7 @@ bool nclogin_user_exec(login_info_t *info)
       failure("Must be session leader to wait for termination\n");
   }
 
-  nclogin_utmp_user(info->name, 0);
+  nclogin_utmp_user(info->name, info->uid, 0);
   nclogin_ctty_user(info->uid, info->gid, 0);
 
   if (!nclogin_config.skipsetuid)

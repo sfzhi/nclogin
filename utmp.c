@@ -4,14 +4,38 @@
 #include "utmp.h"
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <utmp.h>
-#include <unistd.h> // getpid(), getppid()
+#include <fcntl.h> // open(), O_*
+#include <unistd.h> // getpid(), getppid(), pwrite(), close()
+#include <lastlog.h> // struct lastlog
 #include <sys/time.h> // gettimeofday()
+#include <errno.h>
 /*============================================================================*/
 #define UTMP_LOGIN "nclogin"
 /*============================================================================*/
 static char utid[sizeof(((struct utmp *)0)->ut_id) + 1];
 /*============================================================================*/
-static void update_utmp_and_wtmp(bool live, const char *user, pid_t pid)
+static inline void update_lastlog(uid_t uid, time_t when)
+{
+#ifdef _PATH_LASTLOG
+  int fd = open(_PATH_LASTLOG, O_WRONLY);
+  if (fd >= 0)
+  {
+    struct lastlog ll = {.ll_host = "localhost", .ll_time = when};
+    if (nclogin_config.ctty != NULL)
+      strncpy(ll.ll_line, nclogin_config.ctty, sizeof(ll.ll_line));
+    ssize_t res = pwrite(fd, &ll, sizeof(ll), sizeof(ll) * uid);
+    if (res < 0)
+      failure("Failed to update lastlog record: %m\n");
+    else if (res != sizeof(ll))
+      warning("Partially written lastlog record: %zd", res);
+    close(fd);
+  }
+  else if (errno != ENOENT)
+    failure("Failed to open lastlog file (%s): %m\n", _PATH_LASTLOG);
+#endif
+}
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+static void update_records(bool live, const char *user, uid_t uid, pid_t pid)
 {
   struct utmp ut = {
     .ut_type = live? (user != NULL)? USER_PROCESS: LOGIN_PROCESS: DEAD_PROCESS,
@@ -29,23 +53,27 @@ static void update_utmp_and_wtmp(bool live, const char *user, pid_t pid)
       ut.ut_session = sid;
   }
   struct timeval tv;
+  bool have_time = false;
   if (gettimeofday(&tv, NULL) >= 0)
   {
     ut.ut_tv.tv_sec = tv.tv_sec;
     ut.ut_tv.tv_usec = tv.tv_usec;
+    have_time = true;
   }
   setutent();
   if (pututline(&ut) == NULL)
     failure("Failed to update utmp record: %m\n");
   endutent();
-#ifdef _PATH_WTMP
   if (user != NULL)
   {
+#ifdef _PATH_WTMP
     if (!live && (ut.ut_id[0] != '\0'))
       memset(ut.ut_id, '\0', sizeof(ut.ut_id));
     updwtmp(_PATH_WTMP, &ut);
-  }
 #endif
+    if (live && have_time)
+      update_lastlog(uid, ut.ut_tv.tv_sec);
+  }
 }
 /*============================================================================*/
 static inline void save_utid(struct utmp *ut)
@@ -110,22 +138,22 @@ found:    nclogin_config.utid = utid;
         else
           nclogin_config.utid = nclogin_config.ctty + len - sizeof(ut->ut_id);
       }
-      update_utmp_and_wtmp(true, NULL, 0); // calls endutent()
+      update_records(true, NULL, 0, 0); // calls endutent()
     }
     else
       endutent();
   }
 }
 /*============================================================================*/
-void nclogin_utmp_user(const char *name, pid_t pid)
+void nclogin_utmp_user(const char *name, uid_t uid, pid_t pid)
 {
   if (nclogin_config.updateutmp && (nclogin_config.ctty != NULL))
-    update_utmp_and_wtmp(name != NULL, (name != NULL)? name: "", pid);
+    update_records(name != NULL, (name != NULL)? name: "", uid, pid);
 }
 /*============================================================================*/
 void nclogin_utmp_self(bool live)
 {
   if (nclogin_config.updateutmp && (nclogin_config.ctty != NULL))
-    update_utmp_and_wtmp(live, NULL, 0);
+    update_records(live, NULL, 0, 0);
 }
 /*============================================================================*/
