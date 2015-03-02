@@ -174,8 +174,9 @@ bool nclogin_ctty_pgrp(void)
 /*============================================================================*/
 static struct {uid_t uid; gid_t gid; mode_t mode; bool valid;} saved_state;
 /*----------------------------------------------------------------------------*/
-void nclogin_ctty_user(uid_t uid, gid_t gid, mode_t mode)
+void nclogin_ctty_user(uid_t uid, gid_t gid)
 {
+  static const mode_t mode = 0600;
   if (nclogin_config.adjustperm && (cttypath != NULL))
   {
     if (!saved_state.valid)

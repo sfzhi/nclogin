@@ -178,7 +178,7 @@ bool nclogin_user_exec(login_info_t *info)
   }
 
   nclogin_utmp_user(info->name, info->uid, 0);
-  nclogin_ctty_user(info->uid, info->gid, 0);
+  nclogin_ctty_user(info->uid, info->gid);
 
   if (!nclogin_config.skipsetuid)
   {
