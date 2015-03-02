@@ -1,6 +1,7 @@
 *.o
 *.d
 *.swp
+*.swo
 *.vim
 /.backup
 /.rsincl
