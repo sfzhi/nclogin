@@ -9,8 +9,9 @@
 #include <form.h>
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <errno.h>
-#include <wchar.h> // mbrlen()
+#include <wchar.h> // mbrlen(), wcswidth()
 #include <wctype.h> // iswprint()
+#include <stdlib.h> // mbstowcs()
 #include <unistd.h> // STDOUT_FILENO
 /*============================================================================*/
 #define MAX_USERNAME_LEN 24
@@ -55,6 +56,16 @@ typedef struct {
   unsigned int bpos;
   char bytes[256];
 } pwedit_data_t;
+/*============================================================================*/
+static int visible_width(const char *text)
+{
+  size_t len = strlen(text);
+  wchar_t wide[len];
+  int width = (ssize_t)mbstowcs(wide, text, len);
+  if (width > 0)
+    width = wcswidth(wide, width);
+  return width;
+}
 /*============================================================================*/
 void nclogin_form_init(void)
 {
@@ -555,12 +566,12 @@ int nclogin_form_main(login_info_t *info)
   mvwaddch(data.win, 2, 0, ACS_LTEE);
   whline(data.win, ACS_HLINE, SIZE_W - 2);
   mvwaddch(data.win, 2, SIZE_W - 1, ACS_RTEE);
-  size_t nlen = strlen(nclogin_config.name);
-  if ((nlen > 0) && (nlen <= SIZE_W - 13))
+  int nwidth = visible_width(nclogin_config.name);
+  if ((nwidth > 0) && (nwidth <= SIZE_W - 13))
   {
-    mvwaddstr(data.win, 1, (SIZE_W - 11 - nlen) / 2, "Welcome to");
+    mvwaddstr(data.win, 1, (SIZE_W - 11 - nwidth) / 2, "Welcome to");
     wattron(data.win, data.attrs.popout);
-    mvwaddstr(data.win, 1, (SIZE_W + 11 - nlen) / 2, nclogin_config.name);
+    mvwaddstr(data.win, 1, (SIZE_W + 11 - nwidth) / 2, nclogin_config.name);
   }
   else
     mvwaddstr(data.win, 1, 12, "Welcome!");
