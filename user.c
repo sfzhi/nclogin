@@ -89,10 +89,12 @@ static void execute(login_info_t *info)
     int nargs = 1;
     if (nclogin_config.extraargc > 0)
       nargs += nclogin_config.extraargc;
-    char *args[nargs + 1];
+    char *args[nargs + 1 + nclogin_config.appenduser];
     args[0] = argv0;
     for (int i = 0; i < nclogin_config.extraargc; i++)
       args[i + 1] = nclogin_config.extraargv[i];
+    if (nclogin_config.appenduser)
+      args[nargs++] = (char *)info->name;
     args[nargs] = NULL;
     execve(shbin, args, uenv);
   }

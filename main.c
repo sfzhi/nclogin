@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:i:e:T:u::WmbBqrPwsSylk";
+  static const char optstr[] = "+:t:L:n:i:e:T:u::WmbBqrPwsSylak";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -204,6 +204,9 @@ int main(int argc, char *argv[])
       break;
     case 'l':
       nclogin_config.loginshell = true;
+      break;
+    case 'a':
+      nclogin_config.appenduser = true;
       break;
     case 'k':
       nclogin_config.killorphan = true;

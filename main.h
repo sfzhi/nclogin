@@ -38,6 +38,7 @@ typedef struct {
   bool skipsetuid;
   bool exportctty;
   bool loginshell;
+  bool appenduser;
   bool killorphan;
 } config_data_t;
 /*============================================================================*/
