@@ -1,0 +1,397 @@
+.\" nclogin.1
+.de OX
+\fB\\$1\fP \fI\\$2\fP
+..
+.TH NCLOGIN "1" "May 2015" "nclogin-1.0" "System Utilities"
+.SH NAME
+nclogin \- ncurses based \fBlogin\fP(1) replacement
+.SH SYNOPSIS
+.EX
+\fBnclogin\fP [\fIOPTIONS\fP] [\-\-] [\fIPARAMETERS\fP]
+.EE
+.SH DESCRIPTION
+\fBnclogin\fP displays a simple ncurses-based form
+that allows to enter user credentials.
+If the credentials are correct
+it sets up a basic environment for the logged-in user
+and runs the user's default shell or optionally a custom executable.
+It can either \fBexec\fP(2) the shell directly
+or \fBfork\fP(2) a new process and wait for it to terminate.
+.PP
+\fBnclogin\fP can be used as a replacement for the traditional combination
+of \fBagetty\fP(8) and \fBlogin\fP(1) on the Linux console.
+Since it is unaware of the concept of virtual consoles,
+\fBnclogin\fP will typically need to be used together with \fBopenvt\fP(1),
+as described below in the EXAMPLES section.
+.PP
+Another possibility is to use \fBnclogin\fP
+as a lightweight replacement for a local display manager.
+It can start, for example, an X.Org session
+instead of the usual interactive shell.
+The advantage of this over using a traditional display manager
+is that no GUI software is started until a user actually logs in.
+That may be desirable in cases when offering a graphical desktop
+is not the primary function of the computer.
+.PP
+Instead of logging in it is possible to choose
+to reboot or shutdown the operating system.
+Those action can be disabled at runtime if desired.
+.SH OPTIONS
+.TP
+.OX \-t TERM
+Set the \fBTERM\fP environment variable to the specified value.
+The value will be both used internally and passed to the login shell.
+This is equivalent to setting the \fBTERM\fP environment variable
+when \fBnclogin\fP is started.
+.TP
+.OX \-L LANG
+Use the specified locale internally
+and pass it to the login shell in the \fBLANG\fP environment variable.
+This is not always equivalent to passing the \fBLANG\fP environment variable
+to \fBnclogin\fP upon startup.
+Although, it may often have the same effect in practice.
+The value specified with this option is passed to \fBsetlocale\fP(3) directly,
+which gives it higher precedence than \fBLC_*\fP environment variables.
+.TP
+.OX \-n NAME
+Use the specified string in the login form title.
+The title normally has the form "Welcome to \fIname\fP",
+WHERE \fIname\fP is either the \fINAME\fP, if specified with this option,
+or the local host name otherwise.
+If \fINAME\fP is an empty string
+or if the resulting title is too long to fit the form,
+a simple "Welcome!" will be shown instead.
+.TP
+.OX \-i USER
+Pre-fill the login input field with the specified user name.
+The user can enter another name, if desired,
+without having to delete the pre-filled one first.
+.TP
+.OX \-e FILE
+Run the specified executable instead of the user's default shell.
+This can be used to run a script that does some additional things,
+such as setting umask or resource limits,
+before running the login shell.
+Alternatively, this can be used to run something other than the usual shell,
+for example an X.Org session.
+\fIFILE\fP must be an absolute path, that is, it must begin with a slash (/).
+.TP
+.OX \-T NAME
+Inform nclogin about the controlling terminal name
+(device path without the "/dev/" prefix).
+It is usually unnecessary to use this option,
+as \fBnclogin\fP will try to identify the controlling terminal automatically.
+In the rare cases when it is unable to do so, this option can help.
+\fINAME\fP must identify the device that is already the controlling terminal,
+otherwise no attempts to make it one will be made
+and undefined consequences may arise.
+\fINAME\fP must identify the actual terminal device, not the "/dev/tty" alias.
+For example, values like "tty3" or "pts/25" are acceptable,
+while "tty" (referring to "/dev/tty") is not.
+.TP
+\fB\-u\fP[\fIUTID\fP]
+Update user login accounting records (utmp, wtmp, and lastlog).
+The optional \fIUTID\fP argument specifies the unique ID
+to be used in \fButmp\fP(5) and \fBwtmp\fP(5) records.
+In most cases the \fIUTID\fP argument is not necessary,
+as nclogin is usually able to determine the appropriate value automatically
+based on the existing utmp records
+or generate one based on the controlling terminal name.
+.TP
+.B \-W
+Clear screen before showing the login form and after hiding it.
+This is not about the background of the screen where the form is shown,
+but rather about the default screen
+in cases when ncurses shows the form on the alternate screen
+(if supported by the terminal).
+This option allows to present a clean login shell without any previous output
+(such as the remnants of the login form
+or the contents of the screen before nclogin was started).
+.TP
+.B \-m
+Assume monochrome terminal \-
+do not attempt to use colors even if the terminal appears to support them.
+.TP
+.B \-b
+Fill the form screen background with solid black
+instead of the default background color of the terminal.
+In cases when the default background color is black
+this option will not make any visible difference.
+.TP
+.B \-B
+Fill the form screen background with checkboard pattern characters
+instead of solid black.
+This option is applicable only in combination with \fB\-b\fP
+and is ignored otherwise.
+.TP
+.B \-q
+Enable quitting \fBnclogin\fP by pressing Esc.
+This is meant primarily for debugging purposes,
+since it usually doesn't make much sense to do that during normal use.
+.TP
+.B \-r
+Run in restricted mode \- "shutdown" and "reboot" actions will be disabled.
+.TP
+.B \-P
+Adjust ownership and permissions of the controlling terminal.
+The terminal will be owned by the logged-in user and their primary group.
+The permissions will be set to 0600 (readable and writable by the owner).
+If \fB\-w\fP is also specified, the ownership and permissions will be restored
+to their original values after the login shell terminates.
+.TP
+.B \-w
+Run the login shell as a subprocess and wait for it to terminate.
+For this to function properly \fBnclogin\fP must be the session leader.
+The login shell is started in a new foreground process group,
+while \fBnclogin\fP keeps running in the background.
+.TP
+.B \-s
+Run user shell in a new session.
+This option is applicable only in combination with \fB\-w\fP
+and is ignored otherwise.
+In this mode \fBnclogin\fP detaches itself from the controlling terminal
+and leaves the login shell as the new session leader.
+When the shell terminates \fBnclogin\fP re-attaches itself to the terminal.
+.TP
+.B \-S
+Run user shell as a superuser.
+The login environment is prepared as usually,
+but the step of actually switching to the logged-in user is skipped.
+For security reasons this is valid only when running a custom executable
+(with the \fB\-e\fP option).
+The latter gets an opportunity to run privileged operations that the
+user would not be allowed to run.
+In this case the custom executable is ultimately responsible
+for the user switching.
+.TP
+.B \-y
+Export the controlling terminal name as \fBCTTY\fP environment variable.
+This can be used to pass the controlling terminal name to a custom executable,
+which might want to, for example,
+modify the permissions or the group ownership of the terminal device.
+As \fBCTTY\fP is not one of conventionally used environment variables,
+it is advisable to unset it before passing control to the actual login shell.
+.TP
+.B \-l
+Mangle \fBargv[0]\fP for login shell.
+By default \fBargv[0]\fP is the same as the path to the executable.
+With this option the directory part of the path (possibly empty)
+is replaced with a single '\-' character.
+Many shells use this convention to recognize themselves being run
+as a login shell.
+.TP
+.B \-a
+Append the logged-in user name to the command executed upon user login.
+This can be useful to pass the user name to a custom executable
+that cannot be easily told to get it from the environment
+(see EXAMPLES below).
+This option can also be used without a custom executable,
+but that will usually not be useful in practice.
+.TP
+.B \-k
+Arrange for the login shell to be killed when its parent \fBnclogin\fP process
+terminates for whatever reason.
+This option is applicable only in combination with \fB\-w\fP
+and is ignored otherwise.
+This functionality is achieved by calling
+\fBprctl(PR_SET_PDEATHSIG, SIGTERM, ...)\fP
+in the child process before executing the shell.
+However, this option will have no effect
+if the shell or the custom executable is marked set-user-ID or set-group-ID,
+because the configured parent death signal will be reset
+when \fBexecve\fP(2) is called.
+.PP
+Any \fIPARAMETERS\fP, if present, are passed as arguments to the login shell.
+This is typically useful only when running a custom executable
+(with the \fB\-e\fP option),
+because otherwise it may accidentally run the login shell
+with invalid or undesired parameters,
+as different users may have different default shells
+that give the same parameters different meaning.
+If the \fB\-a\fP option is also present
+the user name will be appended to the command after the \fIPARAMETERS\fP.
+.SH ENVIRONMENT
+The login shell or the custom executable specified with the \fB\-e\fP
+option does not automatically inherit the environment variables
+passed to \fBnclogin\fP.
+It is started with a clean environment containing the following
+(and only these) variables:
+.TP
+.B CTTY
+\- the name of the controlling terminal.
+It is set only when the \fB\-y\fP option is specified.
+.TP
+.B HOME
+\- the home directory of the logged-in user.
+.TP
+.B LANG
+\- the default locale.
+It is set only if specified with the \fB\-L\fP option.
+The value of \fBLANG\fP inherited by \fBnclogin\fP from its parent
+is not passed to the login shell.
+.TP
+.B PATH
+\- the initial executable search path.
+This is "/usr/bin:/bin:/usr/sbin:/sbin" for the superuser (uid = 0)
+and "/usr/bin:/bin" for unprivileged users.
+.TP
+.B SHELL
+\- the default shell of the logged-in user.
+When using the \fB\-e\fP option the custom executable
+can use the value of this variable to run the actual shell.
+.TP
+.B TERM
+\- the terminal type.
+The value of this variable is either inherited by \fBnclogin\fP
+from its parent process or specified with the \fB\-t\fP option.
+.TP
+\fBUSER\fP, \fBLOGNAME\fP
+\- these two variables contain the same value \-
+the name of the authenticated user.
+When using the \fB\-S\fP option this is the user that the login shell
+should ultimately end up running as.
+.SH EXAMPLES
+A typical command to put into \fBinittab\fP(5) instead of \fBagetty\fP(8)
+to run \fBnclogin\fP on the virtual console number \fIN\fP:
+.PP
+.EX
+.RS
+/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
+\-Wu
+.RE
+.EE
+.PP
+The same when expecting the user "\fBuser\fP" to likely be the one to login:
+.PP
+.EX
+.RS
+/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
+\-Wu \-i user
+.RE
+.EE
+.PP
+Delegate user environment intialization to \fBlogin\fP(1),
+which can do a bit more than \fBnclogin\fP itself:
+.EX
+.RS
+.PP
+/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
+\-WSae /bin/login \-\- \-p \-f
+.RE
+.EE
+.PP
+Run \fBnclogin\fP inside \fBfbterm\fP(1),
+so that different users can login in different \fBfbterm\fP windows:
+.EX
+.RS
+.PP
+/bin/openvt \-c \fIN\fP \-e \-\- /usr/bin/fbterm \-\- /usr/sbin/nclogin \
+\-L en_US.UTF\-8 \-Wrl
+.RE
+.EE
+.PP
+Run \fBfbterm\fP(1) from \fBnclogin\fP,
+so that the whole \fBfbterm\fP instance belongs to the same user:
+.EX
+.RS
+.PP
+/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
+\-u \-e /bin/sh \-\- \-lc 'exec /usr/bin/fbterm'
+.RE
+.EE
+.PP
+With the previous command \fBfbterm\fP(1) may complain that it
+"can't change kernel keymap table".
+If, for whatever reason, the \fBfbterm\fP executable
+cannot be made set-user-ID "root",
+as its manpage suggests,
+the following workaround can help
+(but beware that \fBfbterm\fP keeps running as the superuser in this case):
+.EX
+.RS
+.PP
+/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
+\-u \-Sae /usr/bin/fbterm \-\- \-\- /bin/su \-l
+.RE
+.EE
+.PP
+Another way to achieve almost the same as in the previous example
+is to use \fBlogin\fP(1) instead of \fBsu\fP(1):
+.EX
+.RS
+.PP
+/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
+\-u \-Sae /usr/bin/fbterm \-\- \-\- /bin/login \-p \-f
+.RE
+.EE
+.PP
+\fBnclxorg\fP \- a small script that comes with \fBnclogin\fP \-
+can be used to arrange for \fBnclogin\fP to start an X.Org session:
+.EX
+.RS
+.PP
+/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
+\-Wu \-Sye /usr/sbin/nclxorg :0
+.RE
+.EE
+.PP
+N.B.:
+When trying out a command involving \fBopenvt\fP(1) in an interactive shell
+the command needs to be prepended with \fBsetsid\fP(1),
+otherwise \fBopenvt\fP will likely fail,
+because it expects to be the session leader.
+.PP
+Of course, \fBnclogin\fP can also be run directly, without \fBopenvt\fP,
+although, that is usually not very useful in practice.
+.SH CAVEATS
+The login credentials are verified against the local \fBshadow\fP(5) database.
+Other authentication backends or APIs, such as Linux-PAM, are not supported.
+.PP
+The "Shutdown" and "Reboot" actions are implemented by executing
+"/sbin/poweroff" or "/sbin/reboot" respectively.
+The commands are hard-coded and cannot be changed at runtime.
+.PP
+When using the \fB\-e\fP option in combination with \fB\-S\fP
+and a shell script as the custom executable, the script will often want
+to use \fBsu\fP(1) to switch to the logged-in user in the end.
+Some versions of \fBsu\fP will relinquish the controlling terminal
+if run with a custom command (the \fB\-c\fP option).
+If the \fBsu\fP process was started as the session leader
+(which will usually be the case when \fBnclogin\fP is used on the Linux console
+as an \fBagetty\fP(1) replacement)
+that will lead to the terminal losing the session leader,
+so all the processes in the session, including \fBsu\fP itself,
+will receive the SIGHUP signal.
+\fBsu\fP will effectively be committing suicide,
+which can be tricky to diagnose,
+as it is not accompanied with any error messages.
+One possible solution to this problem
+is to make sure SIGHUP is ignored by \fBsu\fP.
+That can be achieved, for example, by using \fBnohup\fP(1).
+Of course, the command executed by \fBsu\fP
+will still run without a controlling terminal.
+.PP
+When using \fBinittab\fP(5) to have \fBnclogin\fP started by \fBinit\fP(8)
+it is important to keep in mind that the length of the command is limited
+and if the limit is exceeded the command is silently truncated,
+which may lead to unexpected and confusing results.
+To avoid this kind of issues a long command is better to be put
+in a small shell script, which is then referred to in \fBinittab\fP.
+.SH COPYRIGHT
+Copyright \(co 2015 Sergei Zhirikov <sfzhi@yahoo.com>
+.SH LICENSE
+GPLv3 <http://www.gnu.org/licenses/gpl-3.0.html>.
+.SH "SEE ALSO"
+.BR fbterm (1),
+.BR login (1),
+.BR nohup (1),
+.BR openvt (1),
+.BR su (1),
+.BR execve (2),
+.BR prctl (2),
+.BR setlocale (3),
+.BR inittab (5),
+.BR shadow (5),
+.BR agetty (8),
+.BR poweroff (8),
+.BR reboot (8)
