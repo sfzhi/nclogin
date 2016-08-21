@@ -340,6 +340,15 @@ can be used to arrange for \fBnclogin\fP to start an X.Org session:
 .RE
 .EE
 .PP
+Run \fBkmscon\fP(1) on the virtual console number \fIN\fP
+with \fBnclogin\fP replacing \fBlogin\fP(1):
+.EX
+.RS
+.PP
+/usr/bin/kmscon \-\-vt \fIN\fP \-l \-\- /usr/sbin/nclogin \-L en_US.UTF\-8 \-l
+.RE
+.EE
+.PP
 N.B.:
 When trying out a command involving \fBopenvt\fP(1) in an interactive shell
 the command needs to be prepended with \fBsetsid\fP(1),
@@ -389,6 +398,7 @@ GPLv3 <http://www.gnu.org/licenses/gpl-3.0.html>.
 .SH "SEE ALSO"
 .BR fbterm (1),
 .BR login (1),
+.BR kmscon (1),
 .BR nohup (1),
 .BR openvt (1),
 .BR su (1),
