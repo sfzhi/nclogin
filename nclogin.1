@@ -40,7 +40,7 @@ is not the primary function of the computer.
 .PP
 Instead of logging in it is possible to choose
 to reboot or shutdown the operating system.
-Those action can be disabled at runtime if desired.
+Those actions can be disabled at runtime if desired.
 .SH OPTIONS
 .TP
 .OX \-t TERM
@@ -61,7 +61,7 @@ which gives it higher precedence than \fBLC_*\fP environment variables.
 .OX \-n NAME
 Use the specified string in the login form title.
 The title normally has the form "Welcome to \fIname\fP",
-WHERE \fIname\fP is either the \fINAME\fP, if specified with this option,
+where \fIname\fP is either the \fINAME\fP, if specified with this option,
 or the local host name otherwise.
 If \fINAME\fP is an empty string
 or if the resulting title is too long to fit the form,
@@ -159,7 +159,7 @@ and leaves the login shell as the new session leader.
 When the shell terminates \fBnclogin\fP re-attaches itself to the terminal.
 .TP
 .B \-S
-Run user shell as a superuser.
+Run user shell as the superuser.
 The login environment is prepared as usually,
 but the step of actually switching to the logged-in user is skipped.
 For security reasons this is valid only when running a custom executable
@@ -358,7 +358,7 @@ because it expects to be the session leader.
 Of course, \fBnclogin\fP can also be run directly, without \fBopenvt\fP,
 although, that is usually not very useful in practice.
 .SH CAVEATS
-The login credentials are verified against the local \fBshadow\fP(5) database.
+The entered login credentials are verified using \fBshadow\fP(3) API.
 Other authentication backends or APIs, such as Linux-PAM, are not supported.
 .PP
 The "Shutdown" and "Reboot" actions are implemented by executing
@@ -405,8 +405,8 @@ GPLv3 <http://www.gnu.org/licenses/gpl-3.0.html>.
 .BR execve (2),
 .BR prctl (2),
 .BR setlocale (3),
+.BR shadow (3),
 .BR inittab (5),
-.BR shadow (5),
 .BR agetty (8),
 .BR poweroff (8),
 .BR reboot (8)
