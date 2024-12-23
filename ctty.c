@@ -12,6 +12,7 @@
 #include <fcntl.h> // open(), O_*
 #include <sys/stat.h> // stat(), S_ISCHR
 #include <sys/ioctl.h> // ioctl()
+#include <sys/sysmacros.h> // major(), minor()
 #include <termios.h> // tcgetsid()
 #include <stdlib.h> // strtoll()
 #include <unistd.h>
