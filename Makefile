@@ -11,11 +11,13 @@ ifeq ($(filter-out undefined default,$(origin CC)),)
 CC=gcc
 endif
 #------------------------------------------------------------------------------#
-NCLOGIN_CFLAGS=-std=c99 -Wall -Werror -Wextra -Wno-unused-parameter -fno-common
-NCLOGIN_LDFLAGS=-Wl,--as-needed
-NCLOGIN_LIBS=-lform -lncurses -lcrypt
+NCLOGIN_CFLAGS := -std=c99 -fno-common
+NCLOGIN_CFLAGS += -Wall -Werror -Wextra -Wno-unused-parameter
+NCLOGIN_CFLAGS += -Wno-stringop-truncation -Wno-implicit-fallthrough
+NCLOGIN_LDFLAGS = -Wl,--as-needed
+NCLOGIN_LIBS = -lform -lncurses -lcrypt
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-NCLOGIN_SOURCES=main.c form.c auth.c ctty.c utmp.c user.c exec.c util.c
+NCLOGIN_SOURCES = main.c form.c auth.c ctty.c utmp.c user.c exec.c util.c
 #------------------------------------------------------------------------------#
 .PHONY: all clean
 .SUFFIXES:
