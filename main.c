@@ -19,7 +19,6 @@
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <stdio.h>
 #include <errno.h> // program_invocation_short_name
-#include <error.h> // error()
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <stdarg.h>
 #include <syslog.h>
@@ -132,7 +131,7 @@ static int execute(void)
     case fres_REBOOT:
       loop = nclogin_exec_command(xcmd_REBOOT);
       break;
-    default:;
+    default:
       loop = false;
     }
     nclogin_utmp_self(loop);
@@ -216,13 +215,17 @@ int main(int argc, char *argv[])
       nclogin_config.killorphan = true;
       break;
     case '?':
-      error(1, 0, "Unknown command line option: -%c", optopt);
-      break;
+      fprintf(stderr, "%s: Unknown command line option: -%c\n",
+        program_invocation_short_name, optopt);
+      return 1;
     case ':':
-      error(1, 0, "Missing parameter for -%c option", optopt);
-      break;
+      fprintf(stderr, "%s: Missing parameter for -%c option\n",
+        program_invocation_short_name, optopt);
+      return 1;
     default:
-      error(1, 0, "Failed to process command line options");
+      fprintf(stderr, "%s: Failed to parse command line options\n",
+        program_invocation_short_name);
+      return 1;
     }
   }
   nclogin_config.extraargv = argv + optind;
