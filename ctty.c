@@ -198,9 +198,9 @@ void nclogin_ctty_user(uid_t uid, gid_t gid)
         return;
     }
     if ((mode != 0) && (chmod(cttypath, mode) < 0))
-      failure("Failed to adjust controlling TTY permissions: %m");
+      failure("Failed to adjust controlling TTY permissions: %m\n");
     if (chown(cttypath, uid, gid) < 0)
-      failure("Failed to adjust controlling TTY ownership: %m");
+      failure("Failed to adjust controlling TTY ownership: %m\n");
   }
 }
 /*----------------------------------------------------------------------------*/
@@ -209,9 +209,9 @@ void nclogin_ctty_back(void)
   if (saved_state.valid)
   {
     if (chmod(cttypath, saved_state.mode) < 0)
-      failure("Failed to restore controlling TTY permissions: %m");
+      failure("Failed to restore controlling TTY permissions: %m\n");
     if (chown(cttypath, saved_state.uid, saved_state.gid) < 0)
-      failure("Failed to restore controlling TTY ownership: %m");
+      failure("Failed to restore controlling TTY ownership: %m\n");
     saved_state.valid = false;
   }
 }
