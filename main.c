@@ -1,6 +1,6 @@
 /* main.c */
 /******************************************************************************/
-/* Copyright 2015 Sergei Zhirikov <sfzhi@yahoo.com>                           */
+/* Copyright 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>                      */
 /* This file is a part of "nclogin" (http://github.com/sfzhi/nclogin).        */
 /* It is available under GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt).     */
 /*============================================================================*/
@@ -112,40 +112,44 @@ static int execute(void)
     nclogin_config.name = hostname;
   }
 
-  nclogin_form_init();
-  nclogin_ctty_init();
-  nclogin_utmp_init();
+  int res = 2;
+  if (nclogin_ctty_init())
+  {
+    nclogin_form_init();
+    nclogin_utmp_init();
 
-  bool loop = false;
-  login_info_t login_info;
-  do {
-    memset(&login_info, 0, sizeof(login_info));
-    switch (nclogin_form_main(&login_info))
-    {
-    case fres_SUCCESS:
-      loop = nclogin_user_exec(&login_info);
-      break;
-    case fres_SHUTDOWN:
-      loop = nclogin_exec_command(xcmd_SHUTDOWN);
-      break;
-    case fres_REBOOT:
-      loop = nclogin_exec_command(xcmd_REBOOT);
-      break;
-    default:
-      loop = false;
-    }
-    nclogin_utmp_self(loop);
-  } while(loop);
+    bool loop = false;
+    login_info_t login_info;
+    do {
+      memset(&login_info, 0, sizeof(login_info));
+      switch (nclogin_form_main(&login_info))
+      {
+      case fres_SUCCESS:
+        loop = nclogin_user_exec(&login_info);
+        break;
+      case fres_SHUTDOWN:
+        loop = nclogin_exec_command(xcmd_SHUTDOWN);
+        break;
+      case fres_REBOOT:
+        loop = nclogin_exec_command(xcmd_REBOOT);
+        break;
+      default:
+        loop = false;
+      }
+      nclogin_utmp_self(loop);
+    } while(loop);
+    res = 0;
+  }
 
   closelog();
-  return 0;
+  return res;
 }
 /*============================================================================*/
 int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:i:e:T:u::WmbBqrPwsSylak";
+  static const char optstr[] = "+:t:L:n:i:e:T:c:u::WmbBqrPwsSylak";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -166,7 +170,12 @@ int main(int argc, char *argv[])
       nclogin_config.exec = optarg;
       break;
     case 'T':
+      if (!nclogin_config.changectty)
+        nclogin_config.ctty = optarg;
+      break;
+    case 'c':
       nclogin_config.ctty = optarg;
+      nclogin_config.changectty = true;
       break;
     case 'u':
       nclogin_config.utid = optarg;

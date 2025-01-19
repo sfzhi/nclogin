@@ -1,13 +1,13 @@
 .\" nclogin.1
 .\"****************************************************************************"
-.\" Copyright 2015 Sergei Zhirikov <sfzhi@yahoo.com>                           "
+.\" Copyright 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>                      "
 .\" This file is a part of "nclogin" (http://github.com/sfzhi/nclogin).        "
 .\" It is available under GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt).     "
 .\"============================================================================"
 .de OX
 \fB\\$1\fP \fI\\$2\fP
 ..
-.TH NCLOGIN "1" "May 2015" "nclogin-1.0" "System Utilities"
+.TH NCLOGIN "1" "January 2025" "nclogin-1.1" "System Utilities"
 .SH NAME
 nclogin \- ncurses based \fBlogin\fP(1) replacement
 .SH SYNOPSIS
@@ -93,6 +93,21 @@ and undefined consequences may arise.
 \fINAME\fP must identify the actual terminal device, not the "/dev/tty" alias.
 For example, values like "tty3" or "pts/25" are acceptable,
 while "tty" (referring to "/dev/tty") is not.
+This option is ignored if specified in combination with \fB\-c\fP.
+.TP
+.OX \-c NAME
+Run on the terminal identified by \fINAME\fP
+(device path without the "/dev/" prefix, just like with \fB\-T\fP).
+\fBnclogin\fP will attempt to open the specified terminal device,
+make it its controlling terminal and redirect standard I/O streams to it
+before taking any other action (such as showing the login form).
+Switching the controlling terminal will involve calling \fBsetsid\fP(2)
+to become the session leader unless \fBnclogin\fP is already one.
+That step will fail if \fBnclogin\fP is a process group leader.
+If the specified controlling terminal already has an active session,
+it will be forcefully taken over.
+Any processes previously controlled by the terminal will likely terminate,
+unless they are prepared to deal with the situation in their own ways.
 .TP
 \fB\-u\fP[\fIUTID\fP]
 Update user login accounting records (utmp, wtmp, and lastlog).
@@ -277,9 +292,9 @@ The same when expecting the user "\fBuser\fP" to likely be the one to login:
 .PP
 Delegate user environment intialization to \fBlogin\fP(1),
 which can do a bit more than \fBnclogin\fP itself:
+.PP
 .EX
 .RS
-.PP
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
 \-WSae /bin/login \-\- \-p \-f
 .RE
@@ -287,9 +302,9 @@ which can do a bit more than \fBnclogin\fP itself:
 .PP
 Run \fBnclogin\fP inside \fBfbterm\fP(1),
 so that different users can login in different \fBfbterm\fP windows:
+.PP
 .EX
 .RS
-.PP
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/bin/fbterm \-\- /usr/sbin/nclogin \
 \-L en_US.UTF\-8 \-Wrl
 .RE
@@ -297,9 +312,9 @@ so that different users can login in different \fBfbterm\fP windows:
 .PP
 Run \fBfbterm\fP(1) from \fBnclogin\fP,
 so that the whole \fBfbterm\fP instance belongs to the same user:
+.PP
 .EX
 .RS
-.PP
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
 \-u \-e /bin/sh \-\- \-lc 'exec /usr/bin/fbterm'
 .RE
@@ -312,9 +327,9 @@ cannot be made set-user-ID "root",
 as its manpage suggests,
 the following workaround can help
 (but beware that \fBfbterm\fP keeps running as the superuser in this case):
+.PP
 .EX
 .RS
-.PP
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
 \-u \-Sae /usr/bin/fbterm \-\- \-\- /bin/su \-l
 .RE
@@ -322,9 +337,9 @@ the following workaround can help
 .PP
 Another way to achieve almost the same as in the previous example
 is to use \fBlogin\fP(1) instead of \fBsu\fP(1):
+.PP
 .EX
 .RS
-.PP
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
 \-u \-Sae /usr/bin/fbterm \-\- \-\- /bin/login \-p \-f
 .RE
@@ -332,9 +347,9 @@ is to use \fBlogin\fP(1) instead of \fBsu\fP(1):
 .PP
 \fBnclxorg\fP \- a small script that comes with \fBnclogin\fP \-
 can be used to arrange for \fBnclogin\fP to start an X.Org session:
+.PP
 .EX
 .RS
-.PP
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
 \-Wu \-Sye /usr/sbin/nclxorg :0
 .RE
@@ -342,21 +357,45 @@ can be used to arrange for \fBnclogin\fP to start an X.Org session:
 .PP
 Run \fBkmscon\fP(1) on the virtual console number \fIN\fP
 with \fBnclogin\fP replacing \fBlogin\fP(1):
+.PP
 .EX
 .RS
-.PP
 /usr/bin/kmscon \-\-vt \fIN\fP \-l \-\- /usr/sbin/nclogin \-L en_US.UTF\-8 \-l
 .RE
 .EE
 .PP
-N.B.:
+It is also possible to have \fBnclogin\fP start a Wayland session.
+Due to the large diversity of available Wayland compositors,
+multiplied by the variety of session management configurations,
+it is difficult to provide a concise and directly usable example.
+.SH NOTES
 When trying out a command involving \fBopenvt\fP(1) in an interactive shell
 the command needs to be prepended with \fBsetsid\fP(1),
 otherwise \fBopenvt\fP will likely fail,
 because it expects to be the session leader.
 .PP
-Of course, \fBnclogin\fP can also be run directly, without \fBopenvt\fP,
-although, that is usually not very useful in practice.
+It is not mandatory to use \fBopenvt\fP
+to start \fBnclogin\fP on a specific virtual console.
+Alternatively, the \fB\-c\fP option can tell \fBnclogin\fP
+which virtual console (or any other kind of terminal) to run on.
+The first example above can be replaced with a shorter version:
+.PP
+.EX
+.RS
+/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-Wu
+.RE
+.EE
+.PP
+Other examples can be adjusted similarly.
+.PP
+For the most part, using the \fB\-c\fP option
+is functionally equivalent to using \fBopenvt\fP.
+There are some differences though.
+The \fB\-c\fP option is more generic.
+It will work with any terminal device, not just a virtual console.
+Due to that, \fBnclogin\fP does not have an equivalent
+for the \fB\-s\fP option of \fBopenvt\fP
+to automatically activate the virtual console.
 .SH CAVEATS
 The entered login credentials are verified using \fBshadow\fP(3) API.
 Other authentication backends or APIs, such as Linux-PAM, are not supported.
@@ -384,6 +423,16 @@ is to make sure SIGHUP is ignored by \fBsu\fP.
 That can be achieved, for example, by using \fBnohup\fP(1).
 Of course, the command executed by \fBsu\fP
 will still run without a controlling terminal.
+Some versions of \fBsu\fP that exhibit this problem
+have an alternative command line option \fB\-\-session\-command\fP,
+which acts similarly to \fB\-c\fP,
+but without creating a new session.
+.PP
+Modern versions of \fBsu\fP on Linux are often hardwired to invoke PAM.
+Usually that should not be a problem.
+In cases when PAM involvement is undesirable,
+\fBsu\fP provided by \fBbusybox\fP(1) may be helpful.
+It is also not prone to the suicidal behavior described above.
 .PP
 When using \fBinittab\fP(5) to have \fBnclogin\fP started by \fBinit\fP(8)
 it is important to keep in mind that the length of the command is limited
@@ -392,19 +441,21 @@ which may lead to unexpected and confusing results.
 To avoid this kind of issues a long command is better to be put
 in a small shell script, which is then referred to in \fBinittab\fP.
 .SH COPYRIGHT
-Copyright \(co 2015 Sergei Zhirikov <sfzhi@yahoo.com>
+Copyright \(co 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>
 .SH LICENSE
 GPLv3 <http://www.gnu.org/licenses/gpl-3.0.html>.
 .SH "SEE ALSO"
+.BR busybox (1),
 .BR fbterm (1),
-.BR login (1),
 .BR kmscon (1),
+.BR login (1),
 .BR nohup (1),
 .BR openvt (1),
 .BR su (1),
 .BR execve (2),
 .BR prctl (2),
 .BR setlocale (3),
+.BR setsid (2),
 .BR shadow (3),
 .BR inittab (5),
 .BR agetty (8),

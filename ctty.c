@@ -1,6 +1,6 @@
 /* ctty.c */
 /******************************************************************************/
-/* Copyright 2015 Sergei Zhirikov <sfzhi@yahoo.com>                           */
+/* Copyright 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>                      */
 /* This file is a part of "nclogin" (http://github.com/sfzhi/nclogin).        */
 /* It is available under GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt).     */
 /*============================================================================*/
@@ -9,7 +9,7 @@
 #include "util.h"
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <stdio.h> // snprintf()
-#include <fcntl.h> // open(), O_*
+#include <fcntl.h> // open(), O_*, fcntl(), F_?ETFD, FD_CLOEXEC
 #include <sys/stat.h> // stat(), S_ISCHR
 #include <sys/ioctl.h> // ioctl()
 #include <sys/sysmacros.h> // major(), minor()
@@ -149,8 +149,54 @@ static bool try_tty_links(void)
   return false;
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-void nclogin_ctty_init(void)
+static bool try_open_ctty(void)
 {
+  if ((nclogin_config.ctty == NULL) || (*nclogin_config.ctty == '\0') ||
+      (strcmp(nclogin_config.ctty, "tty") == 0))
+  {
+    failure("Unable to change controlling TTY to '%s'\n", nclogin_config.ctty);
+  }
+  else
+  {
+    size_t len = strlen(nclogin_config.ctty) + 1;
+    char sbuf[strlen("/dev/") + len];
+    memcpy(sbuf + strlen("/dev/"), nclogin_config.ctty, len);
+    memcpy(sbuf, "/dev/", strlen("/dev/"));
+    if (set_ctty_path(sbuf, true))
+    {
+      int fd = open(cttypath, O_RDWR|O_NOATIME|O_CLOEXEC);
+      if (fd >= 0)
+      {
+        int flags;
+        if (((fd >= 3) || (((flags = fcntl(fd, F_GETFD)) != -1) &&
+              (fcntl(fd, F_SETFD, flags&~FD_CLOEXEC) >= 0))) &&
+            ((fd == STDIN_FILENO) || (dup2(fd, STDIN_FILENO) >= 0)) &&
+            ((fd == STDOUT_FILENO) || (dup2(fd, STDOUT_FILENO) >= 0)) &&
+            ((fd == STDERR_FILENO) || (dup2(fd, STDERR_FILENO) >= 0)) &&
+            ((getsid(0) == getpid()) || (setsid() > 0)) &&
+            (ioctl(fd, TIOCSCTTY, 1) >= 0))
+        {
+          cttyfd = fd;
+          infomsg("Changed controlling TTY to '%s'\n", nclogin_config.ctty);
+          return true;
+        }
+        else
+        {
+          failure("Failed to switch controlling TTY: %m'\n");
+          close(fd);
+          return false;
+        }
+      }
+    }
+    failure("Failed to open controlling TTY: %m'\n");
+  }
+  return false;
+}
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+bool nclogin_ctty_init(void)
+{
+  if (nclogin_config.changectty)
+    return try_open_ctty();
   if (((cttydev = get_ctty_dev()) != 0) && (try_tty_stdio() || try_tty_links()))
     infomsg("Identified controlling TTY device: %s (%s)\n", cttyname, cttypath);
   else
@@ -159,6 +205,7 @@ void nclogin_ctty_init(void)
     cttyfd = open("/dev/tty", O_RDONLY|O_NOATIME|O_CLOEXEC);
   if (nclogin_config.ctty == NULL)
     nclogin_config.ctty = cttyname;
+  return true;
 }
 /*============================================================================*/
 bool nclogin_ctty_grab(void)
