@@ -20,30 +20,29 @@ then
   mcookie="$(/usr/bin/mcookie)" && test -n "$mcookie" || \
     fatal "Failed to generate magic cookie for xauth"
 
-  serverauth="/var/tmp/xorg.auth.$$"
+  serverauth="/var/run/xorg.auth.$$"
   trap '/bin/rm -f "$serverauth"' EXIT
   test -e "$serverauth" || > "$serverauth"
 
   [[ "$display" =~ ^:[0-9]+$ ]] || fatal "Invalid display: '$display'"
-  /usr/X11/bin/xauth -q -f "$serverauth" add "$display" . "$mcookie"
+  /usr/bin/xauth -q -f "$serverauth" add "$display" . "$mcookie"
+  /usr/bin/setfacl -b -m "u:$USER:r" "$serverauth"
 
-  printf -v xparams ' %q' \
+  test -d /tmp/.X11-unix || /bin/mkdir -m 1777 /tmp/.X11-unix
+
+  printf -v command ' %q' "$0" -- \
     "$mcookie" "$display" "$console" -auth "$serverauth" "${@:2}"
-  NCLXORG_XPARAMS="${xparams:1}" exec /usr/bin/nohup /bin/su -s \
-    /bin/sh -lpc "'${0//\'/\'\\\'\'}'" "$USER" >&2 < /dev/null
-elif [ $# -eq 0 -a -n "$NCLXORG_XPARAMS" ]
+  exec /bin/busybox su -c \
+    "${command:1}" -l -s /bin/bash "$USER" >&2 < /dev/null
+elif [ $# -ge 6 -a "$1" == '--' -a "${3:0:1}" == ':' ]
 then
-  declare -a xparams=($NCLXORG_XPARAMS); unset NCLXORG_XPARAMS
-  test ${#xparams[@]} -ge 5 -a "${xparams[1]:0:1}" == ':' || \
-    fatal "Internal error or invalid command line parameters"
-
-  readonly mcookie="${xparams[0]}" display="${xparams[1]}"
+  readonly mcookie="$2" display="$3"
   clientauth="${XAUTHORITY:-$HOME/.Xauthority}"
   test -e "$clientauth" || /usr/bin/touch "$clientauth"
-  /usr/X11/bin/xauth -q add "$display" . "$mcookie"
+  /usr/bin/xauth -q add "$display" . "$mcookie"
 
   exec &> >(exec /bin/logger -p "$syslog" -t "xorg[$$]" &> /dev/null)
-  exec /usr/X11/bin/xinit -- /usr/X11/bin/X "${xparams[@]:1}"
+  exec /usr/bin/xinit -- /usr/bin/X "${@:3}"
 else
   fatal "Unrecognized invocation context:" "$0" "$@"
 fi

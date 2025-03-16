@@ -9,4 +9,6 @@ else
 fi
 vt="$1"
 shift
-exec /bin/openvt -c "$vt" -e$sw -- /usr/sbin/nclogin -t linux -L en_US.UTF-8 -Wu "$@"
+/bin/chmod 0620 /dev/tty$vt
+/bin/chown root:tty /dev/tty$vt
+exec /bin/openvt -c "$vt" -fe$sw -- /usr/sbin/nclogin -t linux -L en_US.UTF-8 -Wu "$@"
