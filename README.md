@@ -5,8 +5,8 @@ About
 It is meant to be used as a replacement for the traditional
 combination of agetty(8) and login(1) on the Linux console.
 
-It can also be used as a lightweight replacement for
-a local X display manager to start an X.Org session.
+It can also be used as a lightweight replacement for a local
+display manager to start an X.Org or a Wayland session.
 
 Requirements
 ============
@@ -24,7 +24,7 @@ the binary and the manpage to wherever appropriate.
 Copyright
 =========
 
-Copyright (C) 2015 Sergei Zhirikov <sfzhi@yahoo.com>
+Copyright (C) 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>
 
 License
 =======
