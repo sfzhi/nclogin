@@ -99,8 +99,9 @@ void nclogin_utmp_init(void)
       bool check = (len > 0) && (len <= sizeof(ut->ut_line));
       if (check || (ppid == 1))
       {
+        time_t sec = 0;
+        int32_t usec = 0;
         pid_t pid = getpid();
-        int32_t sec = 0, usec = 0;
         while ((ut = getutent()) != NULL)
         {
           switch (ut->ut_type)
