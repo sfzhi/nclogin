@@ -36,6 +36,7 @@ typedef struct {
   bool checkboard;
   bool enablequit;
   bool restricted;
+  bool fixedlogin;
   bool updateutmp;
   bool adjustperm;
   bool subprocess;

@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:i:e:T:c:u::WmbBqrPwsSylak";
+  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::WmbBqrPwsSylak";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -163,15 +163,20 @@ int main(int argc, char *argv[])
     case 'n':
       nclogin_config.name = optarg;
       break;
-    case 'i':
-      nclogin_config.init = optarg;
-      break;
     case 'e':
       nclogin_config.exec = optarg;
+      break;
+    case 'i':
+      if (!nclogin_config.fixedlogin)
+        nclogin_config.init = optarg;
       break;
     case 'T':
       if (!nclogin_config.changectty)
         nclogin_config.ctty = optarg;
+      break;
+    case 'f':
+      nclogin_config.init = optarg;
+      nclogin_config.fixedlogin = true;
       break;
     case 'c':
       nclogin_config.ctty = optarg;

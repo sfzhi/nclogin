@@ -592,6 +592,8 @@ int nclogin_form_main(login_info_t *info)
     NULL
   };
 
+  Field_Options editor_field_opts = nclogin_config.fixedlogin?
+    O_VISIBLE|O_PUBLIC|O_BLANK: O_VISIBLE|O_ACTIVE|O_PUBLIC|O_EDIT|O_BLANK;
   Field_Options button_field_opts = nclogin_config.restricted?
     O_VISIBLE|O_PUBLIC|O_STATIC: O_VISIBLE|O_ACTIVE|O_PUBLIC|O_STATIC;
 
@@ -600,7 +602,7 @@ int nclogin_form_main(login_info_t *info)
   set_field_buffer(fields[fi_LL], 0, "Login:");
 
   set_field_back(fields[fi_LI], data.attrs.editor);
-  set_field_opts(fields[fi_LI], O_VISIBLE|O_ACTIVE|O_PUBLIC|O_EDIT|O_BLANK);
+  set_field_opts(fields[fi_LI], editor_field_opts);
   set_max_field(fields[fi_LI], MAX_USERNAME_LEN);
 
   set_field_back(fields[fi_PL], data.attrs.window);

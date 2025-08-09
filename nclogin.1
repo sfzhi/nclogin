@@ -71,6 +71,12 @@ a simple "Welcome!" will be shown instead.
 Pre-fill the login input field with the specified user name.
 The user can enter another name, if desired,
 without having to delete the pre-filled one first.
+This option is ignored if specified in combination with \fB\-f\fP.
+.TP
+.OX \-f USER
+Pre-fill the login input field with the specified user name
+and disallow editing it.
+This effectively means that only the given user will be able to log in.
 .TP
 .OX \-e FILE
 Run the specified executable instead of the user's default shell.
@@ -281,7 +287,7 @@ to run \fBnclogin\fP on the virtual console number \fIN\fP:
 .RE
 .EE
 .PP
-The same when expecting the user "\fBuser\fP" to likely be the one to login:
+The same when expecting the user "\fBuser\fP" to likely be the one to log in:
 .PP
 .EX
 .RS
@@ -301,7 +307,7 @@ which can do a bit more than \fBnclogin\fP itself:
 .EE
 .PP
 Run \fBnclogin\fP inside \fBfbterm\fP(1),
-so that different users can login in different \fBfbterm\fP windows:
+so that different \fBfbterm\fP windows will allow different users to log in:
 .PP
 .EX
 .RS
