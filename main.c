@@ -115,6 +115,7 @@ static int execute(void)
   int res = 2;
   if (nclogin_ctty_init())
   {
+    nclogin_ctty_root();
     nclogin_form_init();
     nclogin_utmp_init();
 
@@ -149,7 +150,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::WmbBqrPwsSylak";
+  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::pWmbBqrPwsSylak";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -185,6 +186,9 @@ int main(int argc, char *argv[])
     case 'u':
       nclogin_config.utid = optarg;
       nclogin_config.updateutmp = true;
+      break;
+    case 'p':
+      nclogin_config.securectty = true;
       break;
     case 'W':
       nclogin_config.wipescreen = true;

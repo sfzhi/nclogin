@@ -256,12 +256,33 @@ bool nclogin_ctty_pgrp(void)
 /*============================================================================*/
 static struct {uid_t uid; gid_t gid; mode_t mode; bool valid;} saved_state;
 /*----------------------------------------------------------------------------*/
-void nclogin_ctty_user(uid_t uid, gid_t gid)
+static void apply_ctty_perm(mode_t mode, uid_t uid, gid_t gid, const char *act)
+{
+  if (chmod(cttypath, mode) < 0)
+    failure("Failed to %s controlling TTY permissions: %m\n", act);
+  if (chown(cttypath, uid, gid) < 0)
+    failure("Failed to %s controlling TTY ownership: %m\n", act);
+}
+/*----------------------------------------------------------------------------*/
+void nclogin_ctty_root(void)
 {
   static const mode_t mode = 0600;
-  if (nclogin_config.adjustperm && (cttypath != NULL))
+  static const uid_t root_uid = 0;
+  static const gid_t root_gid = 0;
+  if (cttypath != NULL)
   {
-    if (!saved_state.valid)
+    if (nclogin_config.securectty)
+    {
+      apply_ctty_perm(mode, root_uid, root_gid, "initialize");
+      if (nclogin_config.adjustperm)
+      {
+        saved_state.uid = root_uid;
+        saved_state.gid = root_gid;
+        saved_state.mode = mode;
+        saved_state.valid = true;
+      }
+    }
+    else if (nclogin_config.adjustperm)
     {
       struct stat st;
       if (stat(cttypath, &st) >= 0)
@@ -272,24 +293,23 @@ void nclogin_ctty_user(uid_t uid, gid_t gid)
         saved_state.valid = true;
       }
       else
-        return;
+        failure("Failed to save controlling TTY access rights: %m\n");
     }
-    if ((mode != 0) && (chmod(cttypath, mode) < 0))
-      failure("Failed to adjust controlling TTY permissions: %m\n");
-    if (chown(cttypath, uid, gid) < 0)
-      failure("Failed to adjust controlling TTY ownership: %m\n");
   }
+}
+/*----------------------------------------------------------------------------*/
+void nclogin_ctty_user(uid_t uid, gid_t gid)
+{
+  static const mode_t mode = 0600;
+  if ((cttypath != NULL) && nclogin_config.adjustperm &&
+      (saved_state.valid || !nclogin_config.subprocess))
+    apply_ctty_perm(mode, uid, gid, "adjust");
 }
 /*----------------------------------------------------------------------------*/
 void nclogin_ctty_back(void)
 {
   if (saved_state.valid)
-  {
-    if (chmod(cttypath, saved_state.mode) < 0)
-      failure("Failed to restore controlling TTY permissions: %m\n");
-    if (chown(cttypath, saved_state.uid, saved_state.gid) < 0)
-      failure("Failed to restore controlling TTY ownership: %m\n");
-    saved_state.valid = false;
-  }
+    apply_ctty_perm(saved_state.mode, saved_state.uid, saved_state.gid,
+        "restore");
 }
 /*============================================================================*/

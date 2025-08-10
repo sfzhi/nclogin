@@ -158,12 +158,21 @@ since it usually doesn't make much sense to do that during normal use.
 .B \-r
 Run in restricted mode \- "shutdown" and "reboot" actions will be disabled.
 .TP
+.B \-p
+Initialize ownership and permissions of the controlling terminal.
+When \fBnclogin\fP starts, the owenrship of the controlling terminal
+will be set to the root user and the root group (uid = 0, gid = 0).
+The permissions will be set to \fB0600\fP (read/write access by the owner).
+.TP
 .B \-P
-Adjust ownership and permissions of the controlling terminal.
+Adjust ownership and permissions of the controlling terminal upon login.
 The terminal will be owned by the logged-in user and their primary group.
-The permissions will be set to 0600 (readable and writable by the owner).
-If \fB\-w\fP is also specified, the ownership and permissions will be restored
-to their original values after the login shell terminates.
+The permissions will be set to \fB0600\fP (read/write access by the owner).
+If \fB\-w\fP is also specified, the ownership and the permissions will be
+restored to their original values after the login shell terminates.
+If \fB\-p\fP is also specified, the "original" values will be those
+that were set upon initialization (\fBroot:root\fP and \fB0600\fP),
+rather than those that applied before \fBnclogin\fP started.
 .TP
 .B \-w
 Run the login shell as a subprocess and wait for it to terminate.

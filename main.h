@@ -30,6 +30,7 @@ typedef struct {
   char **extraargv;
   int   extraargc;
   bool changectty;
+  bool securectty;
   bool wipescreen;
   bool monochrome;
   bool background;
