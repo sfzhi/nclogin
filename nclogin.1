@@ -292,7 +292,7 @@ to run \fBnclogin\fP on the virtual console number \fIN\fP:
 .EX
 .RS
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-Wu
+\-WPu
 .RE
 .EE
 .PP
@@ -301,7 +301,7 @@ The same when expecting the user "\fBuser\fP" to likely be the one to log in:
 .EX
 .RS
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-Wu \-i user
+\-WPu \-i user
 .RE
 .EE
 .PP
@@ -321,7 +321,7 @@ so that different \fBfbterm\fP windows will allow different users to log in:
 .EX
 .RS
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/bin/fbterm \-\- /usr/sbin/nclogin \
-\-L en_US.UTF\-8 \-Wrl
+\-L en_US.UTF\-8 \-WPrl
 .RE
 .EE
 .PP
@@ -331,7 +331,7 @@ so that the whole \fBfbterm\fP instance belongs to the same user:
 .EX
 .RS
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-u \-e /bin/sh \-\- \-lc 'exec /usr/bin/fbterm'
+\-u \-Pe /bin/sh \-\- \-lc 'exec /usr/bin/fbterm'
 .RE
 .EE
 .PP
