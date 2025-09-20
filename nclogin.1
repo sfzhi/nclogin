@@ -164,12 +164,17 @@ When \fBnclogin\fP starts, the owenrship of the controlling terminal
 will be set to the root user and the root group (uid = 0, gid = 0).
 The permissions will be set to \fB0600\fP (read/write access by the owner).
 .TP
-.B \-P
+\fB\-P\fP[\fIPERM\fP]
 Adjust ownership and permissions of the controlling terminal upon login.
-The terminal will be owned by the logged-in user and their primary group.
-The permissions will be set to \fB0600\fP (read/write access by the owner).
-If \fB\-w\fP is also specified, the ownership and the permissions will be
-restored to their original values after the login shell terminates.
+The terminal will be owned by the logged-in user and their primary group
+or the group specified by the optional \fIPERM\fP argument (if present).
+The permissions will be set to \fB0600\fP (\fBrw-------\fP)
+to allow read/write access by the owner (the logged-in user)
+or \fB0620\fP (\fBrw--w----\fP) to additionally allow write access
+by the group owner, if the optional \fIPERM\fP argument is present.
+If this option is used in combination with \fB\-w\fP, the ownership
+and the permissions will be restored to their original values after the
+login shell (or the custom executable) started by \fBnclogin\fP terminates.
 If \fB\-p\fP is also specified, the "original" values will be those
 that were set upon initialization (\fBroot:root\fP and \fB0600\fP),
 rather than those that applied before \fBnclogin\fP started.
@@ -292,16 +297,17 @@ to run \fBnclogin\fP on the virtual console number \fIN\fP:
 .EX
 .RS
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-WPu
+\-Wu \-P
 .RE
 .EE
 .PP
-The same when expecting the user "\fBuser\fP" to likely be the one to log in:
+The same when making the user's terminal writable by the "\fBtty\fP" group
+and expecting the user "\fBuser\fP" to likely be the one to log in:
 .PP
 .EX
 .RS
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-WPu \-i user
+\-Wu \-Ptty \-i user
 .RE
 .EE
 .PP
@@ -321,7 +327,7 @@ so that different \fBfbterm\fP windows will allow different users to log in:
 .EX
 .RS
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/bin/fbterm \-\- /usr/sbin/nclogin \
-\-L en_US.UTF\-8 \-WPrl
+\-L en_US.UTF\-8 \-WrlP
 .RE
 .EE
 .PP
@@ -331,7 +337,7 @@ so that the whole \fBfbterm\fP instance belongs to the same user:
 .EX
 .RS
 /bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-u \-Pe /bin/sh \-\- \-lc 'exec /usr/bin/fbterm'
+\-u \-P \-e /bin/sh \-\- \-lc 'exec /usr/bin/fbterm'
 .RE
 .EE
 .PP

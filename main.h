@@ -27,6 +27,7 @@ typedef struct {
   const char *exec;
   const char *ctty;
   const char *utid;
+  const char *perm;
   char **extraargv;
   int   extraargc;
   bool changectty;

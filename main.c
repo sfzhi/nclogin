@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::pWmbBqrPwsSylak";
+  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::P::pWmbBqrwsSylak";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -187,6 +187,10 @@ int main(int argc, char *argv[])
       nclogin_config.utid = optarg;
       nclogin_config.updateutmp = true;
       break;
+    case 'P':
+      nclogin_config.perm = optarg;
+      nclogin_config.adjustperm = true;
+      break;
     case 'p':
       nclogin_config.securectty = true;
       break;
@@ -207,9 +211,6 @@ int main(int argc, char *argv[])
       break;
     case 'r':
       nclogin_config.restricted = true;
-      break;
-    case 'P':
-      nclogin_config.adjustperm = true;
       break;
     case 'w':
       nclogin_config.subprocess = true;

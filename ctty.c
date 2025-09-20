@@ -8,13 +8,15 @@
 #include "ctty.h"
 #include "util.h"
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+#include <grp.h> // setgrent(), getgrnam(), endgrent()
+#include <ctype.h> // isdigit()
 #include <stdio.h> // snprintf()
 #include <fcntl.h> // open(), O_*, fcntl(), F_?ETFD, FD_CLOEXEC
 #include <sys/stat.h> // stat(), S_ISCHR
 #include <sys/ioctl.h> // ioctl()
 #include <sys/sysmacros.h> // major(), minor()
 #include <termios.h> // tcgetsid()
-#include <stdlib.h> // strtoll()
+#include <stdlib.h> // strto?l()
 #include <unistd.h>
 #include <errno.h>
 /*----------------------------------------------------------------------------*/
@@ -182,7 +184,7 @@ static bool try_dev_links(void)
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 static bool try_find_ctty(void)
 {
-  return ((cttydev = get_ctty_dev()) != 0) && \
+  return ((cttydev = get_ctty_dev()) != 0) &&
     (try_cmd_arg() || try_pts_path() || try_stdio_fds() || try_dev_links());
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -264,6 +266,48 @@ static void apply_ctty_perm(mode_t mode, uid_t uid, gid_t gid, const char *act)
     failure("Failed to %s controlling TTY ownership: %m\n", act);
 }
 /*----------------------------------------------------------------------------*/
+static gid_t get_tty_gid(void)
+{
+  if (nclogin_config.perm != NULL)
+  {
+    if (isdigit(*nclogin_config.perm))
+    {
+      errno = 0;
+      char *upto = NULL;
+      unsigned long value = strtoul(nclogin_config.perm, &upto, 0);
+      if ((upto > nclogin_config.perm) && (*upto == '\0') && (errno == 0))
+      {
+        if (((unsigned long)(gid_t)value != value) ||
+            ((gid_t)value == (gid_t)(-1)) || ((gid_t)value <= 0))
+        {
+          if (value != 0)
+            failure("Invalid controlling TTY group ID: %s\n",
+              nclogin_config.perm);
+          return 0;
+        }
+        return (gid_t)value;
+      }
+    }
+    gid_t gid = 0;
+    struct group *gr;
+    setgrent();
+    do {
+      errno = 0;
+      gr = getgrnam(nclogin_config.perm);
+    } while ((gr == NULL) && (errno == EINTR));
+    if (gr != NULL)
+      gid = gr->gr_gid;
+    else if (errno != 0)
+      failure("Failed to look up controlling TTY group by name: %m\n");
+    else
+      failure("Could not find controlling TTY group named '%s'\n",
+        nclogin_config.perm);
+    endgrent();
+    return gid;
+  }
+  return 0;
+}
+/*----------------------------------------------------------------------------*/
 void nclogin_ctty_root(void)
 {
   static const mode_t mode = 0600;
@@ -300,10 +344,17 @@ void nclogin_ctty_root(void)
 /*----------------------------------------------------------------------------*/
 void nclogin_ctty_user(uid_t uid, gid_t gid)
 {
-  static const mode_t mode = 0600;
   if ((cttypath != NULL) && nclogin_config.adjustperm &&
       (saved_state.valid || !nclogin_config.subprocess))
+  {
+    mode_t mode = 0600;
+    gid_t tty_gid = get_tty_gid();
+    if (tty_gid > 0) {
+      gid = tty_gid;
+      mode |= 0020;
+    }
     apply_ctty_perm(mode, uid, gid, "adjust");
+  }
 }
 /*----------------------------------------------------------------------------*/
 void nclogin_ctty_back(void)
