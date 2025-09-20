@@ -1,6 +1,6 @@
 /* form.c */
 /******************************************************************************/
-/* Copyright 2015 Sergei Zhirikov <sfzhi@yahoo.com>                           */
+/* Copyright 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>                      */
 /* This file is a part of "nclogin" (http://github.com/sfzhi/nclogin).        */
 /* It is available under GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt).     */
 /*============================================================================*/
@@ -22,7 +22,7 @@
 #define MAX_PASSWORD_LEN 32
 /*----------------------------------------------------------------------------*/
 #define SIZE_H 11
-#define SIZE_W 32
+#define SIZE_W 34
 /*============================================================================*/
 enum {
   fi_LL,
@@ -184,12 +184,12 @@ static bool modal_popup(dialog_data_t *data, const char *msg, bool query)
   int cstate = curs_set(0);
   size_t len = strlen(msg);
 repeat:
-  win = newwin(3, SIZE_W - 4, (LINES - 3) / 2, (COLS - SIZE_W + 4) / 2);
+  win = newwin(3, SIZE_W - 6, (LINES - 3) / 2, (COLS - SIZE_W + 6) / 2);
   wbkgd(win, data->attrs.errmsg);
   leaveok(win, TRUE);
   keypad(win, TRUE);
   box(win, 0, 0);
-  mvwaddstr(win, 1, (SIZE_W - 4 - len) / 2, msg);
+  mvwaddstr(win, 1, (SIZE_W - 6 - len) / 2, msg);
   wrefresh(win);
 
   bkgd(data->attrs.screen);
@@ -583,12 +583,12 @@ int nclogin_form_main(login_info_t *info)
   WINDOW *sub = derwin(data.win, SIZE_H - 4, SIZE_W - 2, 3, 1);
 
   FIELD *fields[] = {
-    [fi_LL] = new_field(1, 6, 1, 2, 0, 0),
-    [fi_LI] = new_field(1, 16, 1, 12, 0, 0),
-    [fi_PL] = new_field(1, 9, 3, 2, 0, 0),
-    [fi_PI] = new_field(1, 16, 3, 12, 0, 0),
-    [fi_SB] = new_field(1, 12, 5, 2, 0, 0),
-    [fi_RB] = new_field(1, 12, 5, 16, 0, 0),
+    [fi_LL] = new_field(1, 6, 1, 3, 0, 0),
+    [fi_LI] = new_field(1, 16, 1, 13, 0, 0),
+    [fi_PL] = new_field(1, 9, 3, 3, 0, 0),
+    [fi_PI] = new_field(1, 16, 3, 13, 0, 0),
+    [fi_SB] = new_field(1, 12, 5, 3, 0, 0),
+    [fi_RB] = new_field(1, 12, 5, 17, 0, 0),
     NULL
   };
 
