@@ -12,11 +12,12 @@
 #include <term.h>
 #include <form.h>
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-#include <errno.h>
+#include <stdio.h> // fflush(), stdout
 #include <wchar.h> // mbrlen(), wcswidth()
 #include <wctype.h> // iswprint()
 #include <stdlib.h> // mbstowcs()
 #include <unistd.h> // STDOUT_FILENO
+#include <errno.h>
 /*============================================================================*/
 #define MAX_USERNAME_LEN 24
 #define MAX_PASSWORD_LEN 32
@@ -160,30 +161,98 @@ static const char *pwedit_value(pwedit_data_t *data)
     return NULL;
 }
 /*============================================================================*/
-static void resize_form(dialog_data_t *data)
+static void draw_main_frame(dialog_data_t *data)
 {
-  erase();
-  wresize(data->win, SIZE_H, SIZE_W);
-  mvwin(data->win, (LINES - SIZE_H) / 2, (COLS - SIZE_W) / 2);
-  refresh();
-}
-/*----------------------------------------------------------------------------*/
-static void resize_both(dialog_data_t *data)
-{
-  resize_form(data);
-  nodelay(data->win, TRUE);
-  int ch = wgetch(data->win);
-  if (ch != ERR) ungetch(ch);
-  nodelay(data->win, FALSE);
+  wbkgd(data->win, data->attrs.window);
+  box(data->win, 0, 0);
+  mvwaddch(data->win, 2, 0, ACS_LTEE);
+  whline(data->win, ACS_HLINE, SIZE_W - 2);
+  mvwaddch(data->win, 2, SIZE_W - 1, ACS_RTEE);
+  int nwidth = visible_width(nclogin_config.name);
+  if ((nwidth > 0) && (nwidth <= SIZE_W - 15))
+  {
+    mvwaddstr(data->win, 1, (SIZE_W - 11 - nwidth) / 2, "Welcome to");
+    wattron(data->win, data->attrs.popout);
+    mvwaddstr(data->win, 1, (SIZE_W + 11 - nwidth) / 2, nclogin_config.name);
+  }
+  else
+    mvwaddstr(data->win, 1, 12, "Welcome!");
 }
 /*============================================================================*/
-static bool modal_popup(dialog_data_t *data, const char *msg, bool query)
+static bool input_error(void)
+{
+  bool result = (errno != 0) && (errno != EINTR);
+  if (result)
+    failure("Error while processing form input events: %m\n");
+  return result;
+}
+/*============================================================================*/
+static bool wait_for_resize(WINDOW *win)
+{
+  for (;;)
+  {
+    errno = 0;
+    switch (wgetch(win))
+    {
+    case ERR:
+      if (input_error())
+        return false;
+      break;
+    case KEY_RESIZE:
+      return true;
+    default:;
+    }
+  }
+}
+/*----------------------------------------------------------------------------*/
+static bool resize_form(dialog_data_t *data)
+{
+  erase();
+  WINDOW *sub = NULL;
+  while ((LINES < SIZE_H) || (COLS < SIZE_W))
+  {
+    if (sub == NULL)
+    {
+      if ((data->field != NULL) && (field_opts(data->field) & O_EDIT))
+        form_driver(data->form, REQ_VALIDATION);
+      wclear(data->win);
+      sub = form_sub(data->form);
+      wbkgd(data->win, data->attrs.screen);
+      wbkgd(sub, data->attrs.screen);
+      unpost_form(data->form);
+      data->started = false;
+      refresh();
+    }
+    if (!wait_for_resize(data->win))
+      return false;
+  }
+  wresize(data->win, SIZE_H, SIZE_W);
+  if (sub != NULL)
+  {
+    draw_main_frame(data);
+    wbkgd(sub, data->attrs.window);
+    wresize(sub, SIZE_H - 4, SIZE_W - 2);
+    mvderwin(sub, 3, 1);
+    post_form(data->form);
+    if (data->curindex == fi_PI)
+      form_driver(data->form, REQ_END_FIELD);
+    pos_form_cursor(data->form);
+    data->started = true;
+  }
+  mvwin(data->win, (LINES - SIZE_H) / 2, (COLS - SIZE_W) / 2);
+  refresh();
+  return true;
+}
+/*============================================================================*/
+enum {mres_FAILURE = -1, mres_DEFAULT = 0, mres_CONFIRM = 1};
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+static int modal_popup(dialog_data_t *data, const char *msg, bool query)
 {
   WINDOW *win;
-  bool result = false;
-  int cstate = curs_set(0);
   size_t len = strlen(msg);
-repeat:
+  int cstate = curs_set(0);
+  int result = mres_DEFAULT;
+show:
   win = newwin(3, SIZE_W - 6, (LINES - 3) / 2, (COLS - SIZE_W + 6) / 2);
   wbkgd(win, data->attrs.errmsg);
   leaveok(win, TRUE);
@@ -201,13 +270,25 @@ repeat:
     switch (ch = wgetch(win))
     {
     case ERR:
-      if ((errno != 0) && (errno != EINTR))
+      if (input_error())
+      {
+        result = mres_FAILURE;
         loop = false;
+      }
       break;
     case KEY_RESIZE:
       delwin(win);
-      resize_both(data);
-      goto repeat;
+      if (resize_form(data))
+      {
+        curs_set(0);
+        nodelay(data->win, TRUE);
+        int ch = wgetch(data->win);
+        if (ch != ERR) ungetch(ch);
+        nodelay(data->win, FALSE);
+        goto show;
+      }
+      result = mres_FAILURE;
+      goto done;
     case KEY_ENTER:
     case '\n':
       if (query)
@@ -222,7 +303,8 @@ repeat:
     case 'N':
       if (query)
       {
-        result = (ch == 'y') || (ch == 'Y');
+        if ((ch == 'y') || (ch == 'Y'))
+          result = mres_CONFIRM;
         loop = false;
       }
       break;
@@ -230,6 +312,7 @@ repeat:
     }
   } while (loop);
   delwin(win);
+done:
   if (cstate != ERR)
     curs_set(cstate);
   wredrawln(data->win, 4, 3);
@@ -301,35 +384,40 @@ static size_t field_value(FIELD *field, char *out, size_t max)
 }
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 static bool check_creds(login_info_t *info, dialog_data_t *data,
-  pwedit_data_t *pwedit)
+  pwedit_data_t *pwedit, int *result)
 {
-  int result = 0;
   char login[256];
   FIELD **fields = form_fields(data->form);
   if (field_value(fields[fi_LI], login, sizeof(login)) > 0)
   {
     const char *passw = pwedit_value(pwedit);
-    if (passw != NULL)
-      result = nclogin_auth_user(info, login, passw);
+    if ((passw != NULL) && (nclogin_auth_user(info, login, passw) > 0))
+    {
+      *result = fres_SUCCESS;
+      return true;
+    }
   }
-  if (result <= 0)
-    modal_popup(data, "Authentication failed!", false);
-  return result > 0;
+  if (modal_popup(data, "Authentication failed!", false) == mres_FAILURE)
+    *result = fres_FAILURE;
+  return false;
 }
 /*----------------------------------------------------------------------------*/
 static void command(dialog_data_t *data, int *result)
 {
-  if (modal_popup(data, (data->curindex == fi_SB)?
+  bool shutdown = data->curindex == fi_SB;
+  switch (modal_popup(data, shutdown?
       "Really shutdown? (Y/N)": "Really reboot? (Y/N)", true))
-    *result = (data->curindex == fi_SB)? fres_SHUTDOWN: fres_REBOOT;
+  {
+  case mres_FAILURE:
+    *result = fres_FAILURE;
+    break;
+  case mres_CONFIRM:
+    *result = shutdown? fres_SHUTDOWN: fres_REBOOT;
+    break;
+  default:;
+  }
 }
 /*----------------------------------------------------------------------------*/
-static inline bool input_error(void)
-{
-  failure("Error while processing form input events: %m\n");
-  return true;
-}
-/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 static int backspace(dialog_data_t *data)
 {
   if ((data->field->dcols == data->field->maxgrow) &&
@@ -357,7 +445,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
     switch (ch)
     {
     case ERR:
-      if ((errno != 0) && (errno != EINTR) && input_error())
+      if (input_error())
         result = fres_FAILURE;
       break;
     case '\x0C': // ^L
@@ -367,7 +455,8 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
       refresh();
       break;
     case KEY_RESIZE:
-      resize_form(data);
+      if (!resize_form(data))
+        result = fres_FAILURE;
       break;
     case KEY_UP:
       code = REQ_UP_FIELD;
@@ -392,9 +481,7 @@ static int input_loop(dialog_data_t *data, login_info_t *info)
         code = REQ_NEXT_FIELD;
         break;
       case fi_PI:
-        if (check_creds(info, data, &pwedit))
-          result = fres_SUCCESS;
-        else
+        if (!check_creds(info, data, &pwedit, &result))
           code = REQ_CLR_FIELD;
         pwedit_clear(&pwedit);
         break;
@@ -565,20 +652,7 @@ int nclogin_form_main(login_info_t *info)
 
   data.win = newwin(SIZE_H, SIZE_W, (LINES - SIZE_H) / 2, (COLS - SIZE_W) / 2);
   keypad(data.win, TRUE);
-  wbkgd(data.win, data.attrs.window);
-  box(data.win, 0, 0);
-  mvwaddch(data.win, 2, 0, ACS_LTEE);
-  whline(data.win, ACS_HLINE, SIZE_W - 2);
-  mvwaddch(data.win, 2, SIZE_W - 1, ACS_RTEE);
-  int nwidth = visible_width(nclogin_config.name);
-  if ((nwidth > 0) && (nwidth <= SIZE_W - 13))
-  {
-    mvwaddstr(data.win, 1, (SIZE_W - 11 - nwidth) / 2, "Welcome to");
-    wattron(data.win, data.attrs.popout);
-    mvwaddstr(data.win, 1, (SIZE_W + 11 - nwidth) / 2, nclogin_config.name);
-  }
-  else
-    mvwaddstr(data.win, 1, 12, "Welcome!");
+  draw_main_frame(&data);
 
   WINDOW *sub = derwin(data.win, SIZE_H - 4, SIZE_W - 2, 3, 1);
 
