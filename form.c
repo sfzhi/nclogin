@@ -603,6 +603,12 @@ int nclogin_form_main(login_info_t *info)
 {
   clrscr(); initscr(); raw(); noecho();
 
+  if ((LINES < SIZE_H) || (COLS < SIZE_W))
+  {
+    failure("Terminal is too small for the login form\n");
+    return fres_FAILURE;
+  }
+
   dialog_data_t data = {
     .win = NULL,
     .form = NULL,
