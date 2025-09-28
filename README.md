@@ -6,7 +6,7 @@ It is meant to be used as a replacement for the traditional
 combination of agetty(8) and login(1) on the Linux console.
 
 It can also be used as a lightweight replacement for a local
-display manager to start an X.Org or a Wayland session.
+display manager to start an X11 or Wayland desktop session.
 
 Requirements
 ============

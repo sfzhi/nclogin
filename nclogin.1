@@ -7,7 +7,7 @@
 .de OX
 \fB\\$1\fP \fI\\$2\fP
 ..
-.TH NCLOGIN "1" "January 2025" "nclogin-1.1" "System Utilities"
+.TH NCLOGIN "1" "September 2025" "nclogin-1.2" "System Utilities"
 .SH NAME
 nclogin \- ncurses based \fBlogin\fP(1) replacement
 .SH SYNOPSIS
@@ -45,9 +45,13 @@ Those actions can be disabled at runtime if desired.
 .TP
 .OX \-t TERM
 Set the \fBTERM\fP environment variable to the specified value.
-The value will be both used internally and passed to the login shell.
-This is equivalent to setting the \fBTERM\fP environment variable
-when \fBnclogin\fP is started.
+If the environment variable was not set
+when \fBnclogin\fP was started, the value of this option
+will be both used internally and passed to the login shell.
+When this option is used in the presence
+of the \fBTERM\fP environment variable upon startup,
+the value of the envorinment variable will be used internally
+and the value of the option will be passed to the login shell.
 .TP
 .OX \-L LANG
 Use the specified locale internally
@@ -81,10 +85,9 @@ This effectively means that only the given user will be able to log in.
 .OX \-e FILE
 Run the specified executable instead of the user's default shell.
 This can be used to run a script that does some additional things,
-such as setting umask or resource limits,
-before running the login shell.
+such as setting umask or resource limits, before running the login shell.
 Alternatively, this can be used to run something other than the usual shell,
-for example an X.Org session.
+for example a graphical desktop session (such as X11 or Wayland).
 \fIFILE\fP must be an absolute path, that is, it must begin with a slash (/).
 .TP
 .OX \-T NAME
@@ -296,8 +299,7 @@ to run \fBnclogin\fP on the virtual console number \fIN\fP:
 .PP
 .EX
 .RS
-/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-Wu \-P
+/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-Wu \-P
 .RE
 .EE
 .PP
@@ -306,8 +308,8 @@ and expecting the user "\fBuser\fP" to likely be the one to log in:
 .PP
 .EX
 .RS
-/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-Wu \-Ptty \-i user
+/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-Wu \
+\-Ptty \-i user
 .RE
 .EE
 .PP
@@ -316,8 +318,8 @@ which can do a bit more than \fBnclogin\fP itself:
 .PP
 .EX
 .RS
-/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-WSae /bin/login \-\- \-p \-f
+/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-WSae \
+/bin/login \-\- \-p \-f
 .RE
 .EE
 .PP
@@ -336,23 +338,22 @@ so that the whole \fBfbterm\fP instance belongs to the same user:
 .PP
 .EX
 .RS
-/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-u \-P \-e /bin/sh \-\- \-lc 'exec /usr/bin/fbterm'
+/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-u \-P \-e \
+/bin/sh \-\- \-lc 'exec /usr/bin/fbterm'
 .RE
 .EE
 .PP
 With the previous command \fBfbterm\fP(1) may complain that it
 "can't change kernel keymap table".
 If, for whatever reason, the \fBfbterm\fP executable
-cannot be made set-user-ID "root",
-as its manpage suggests,
+cannot be made set-user-ID "root" or granted the TTY config capability,
 the following workaround can help
 (but beware that \fBfbterm\fP keeps running as the superuser in this case):
 .PP
 .EX
 .RS
-/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-u \-Sae /usr/bin/fbterm \-\- \-\- /bin/su \-l
+/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-u \-Sae \
+/usr/bin/fbterm \-\- \-\- /bin/su \-l
 .RE
 .EE
 .PP
@@ -361,8 +362,8 @@ is to use \fBlogin\fP(1) instead of \fBsu\fP(1):
 .PP
 .EX
 .RS
-/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-u \-Sae /usr/bin/fbterm \-\- \-\- /bin/login \-p \-f
+/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-u \-Sae \
+/usr/bin/fbterm \-\- \-\- /bin/login \-p \-f
 .RE
 .EE
 .PP
@@ -371,8 +372,8 @@ can be used to arrange for \fBnclogin\fP to start an X.Org session:
 .PP
 .EX
 .RS
-/bin/openvt \-c \fIN\fP \-e \-\- /usr/sbin/nclogin \-t linux \-L en_US.UTF\-8 \
-\-Wu \-Sye /usr/sbin/nclxorg :0
+/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-Wu \-Sye \
+/usr/sbin/nclxorg :0
 .RE
 .EE
 .PP
@@ -394,20 +395,6 @@ When trying out a command involving \fBopenvt\fP(1) in an interactive shell
 the command needs to be prepended with \fBsetsid\fP(1),
 otherwise \fBopenvt\fP will likely fail,
 because it expects to be the session leader.
-.PP
-It is not mandatory to use \fBopenvt\fP
-to start \fBnclogin\fP on a specific virtual console.
-Alternatively, the \fB\-c\fP option can tell \fBnclogin\fP
-which virtual console (or any other kind of terminal) to run on.
-The first example above can be replaced with a shorter version:
-.PP
-.EX
-.RS
-/usr/sbin/nclogin \-c tty\fIN\fP \-t linux \-L en_US.UTF\-8 \-Wu
-.RE
-.EE
-.PP
-Other examples can be adjusted similarly.
 .PP
 For the most part, using the \fB\-c\fP option
 is functionally equivalent to using \fBopenvt\fP.
