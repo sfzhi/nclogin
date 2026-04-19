@@ -1,11 +1,12 @@
 /* main.c */
 /******************************************************************************/
-/* Copyright 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>                      */
+/* Copyright 2015-2026 Sergei Zhirikov <sfzhi@yahoo.com>                      */
 /* This file is a part of "nclogin" (http://github.com/sfzhi/nclogin).        */
 /* It is available under GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt).     */
 /*============================================================================*/
 #include "main.h"
 #include "ctty.h"
+#include "lock.h"
 #include "form.h"
 #include "utmp.h"
 #include "user.h"
@@ -13,7 +14,7 @@
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <unistd.h> // getopt(), chdir(), gethostname()
 #include <stdlib.h> // setenv()
-#include <signal.h>
+#include <signal.h> // signal(), SIG*
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <locale.h>
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -78,9 +79,10 @@ void nclogin_main_undo(void)
 /*============================================================================*/
 static void setup_signals(void)
 {
-  signal(SIGQUIT, SIG_DFL);
-  signal(SIGTERM, SIG_DFL);
-  signal(SIGCHLD, SIG_DFL);
+  sighandler_t handler = nclogin_config.screenlock? SIG_IGN: SIG_DFL;
+  signal(SIGQUIT, handler);
+  signal(SIGTERM, handler);
+  signal(SIGCHLD, handler);
   ignore_signals(true);
 }
 /*============================================================================*/
@@ -126,7 +128,7 @@ static int execute(void)
       switch (nclogin_form_main(&login_info))
       {
       case fres_SUCCESS:
-        loop = nclogin_user_exec(&login_info);
+        loop = !nclogin_config.screenlock && nclogin_user_exec(&login_info);
         break;
       case fres_SHUTDOWN:
         loop = nclogin_exec_command(xcmd_SHUTDOWN);
@@ -139,6 +141,7 @@ static int execute(void)
       }
       nclogin_utmp_self(loop);
     } while(loop);
+    nclogin_lock_done();
     res = 0;
   }
 
@@ -150,7 +153,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::P::pWmbBqrwsSylak";
+  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::P::pWmbBqrwsSylakx";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -232,6 +235,9 @@ int main(int argc, char *argv[])
       break;
     case 'k':
       nclogin_config.killorphan = true;
+      break;
+    case 'x':
+      nclogin_config.screenlock = true;
       break;
     case '?':
       fprintf(stderr, "%s: Unknown command line option: -%c\n",

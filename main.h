@@ -1,6 +1,6 @@
 /* main.h */
 /******************************************************************************/
-/* Copyright 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>                      */
+/* Copyright 2015-2026 Sergei Zhirikov <sfzhi@yahoo.com>                      */
 /* This file is a part of "nclogin" (http://github.com/sfzhi/nclogin).        */
 /* It is available under GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt).     */
 /*============================================================================*/
@@ -10,6 +10,8 @@
 #include <stdbool.h> // bool, true, false
 #include <sys/types.h> // uid_t, gid_t, pid_t
 /*============================================================================*/
+#define INT_STR_BUF(t) (((sizeof(t) * 5) + 3) / 2)
+/*----------------------------------------------------------------------------*/
 typedef struct {
   const char *name;
   const char *info;
@@ -48,6 +50,7 @@ typedef struct {
   bool loginshell;
   bool appenduser;
   bool killorphan;
+  bool screenlock;
 } config_data_t;
 /*============================================================================*/
 extern config_data_t nclogin_config;

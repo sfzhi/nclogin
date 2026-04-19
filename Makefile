@@ -1,6 +1,6 @@
 # Makefile
 #******************************************************************************#
-# Copyright 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>                        #
+# Copyright 2015-2026 Sergei Zhirikov <sfzhi@yahoo.com>                        #
 # This file is a part of "nclogin" (http://github.com/sfzhi/nclogin).          #
 # It is available under GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt).       #
 #==============================================================================#
@@ -17,7 +17,7 @@ NCLOGIN_CFLAGS += -Wno-stringop-truncation -Wno-implicit-fallthrough
 NCLOGIN_LDFLAGS = -Wl,--as-needed
 NCLOGIN_LIBS = -lform -lncurses -lcrypt
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-NCLOGIN_SOURCES = main.c form.c auth.c ctty.c utmp.c user.c exec.c util.c
+NCLOGIN_SOURCES = main.c form.c auth.c ctty.c lock.c utmp.c user.c exec.c util.c
 #------------------------------------------------------------------------------#
 .PHONY: all clean
 .SUFFIXES:

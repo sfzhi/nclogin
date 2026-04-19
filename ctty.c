@@ -1,10 +1,11 @@
 /* ctty.c */
 /******************************************************************************/
-/* Copyright 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>                      */
+/* Copyright 2015-2026 Sergei Zhirikov <sfzhi@yahoo.com>                      */
 /* This file is a part of "nclogin" (http://github.com/sfzhi/nclogin).        */
 /* It is available under GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt).     */
 /*============================================================================*/
 #include "main.h"
+#include "lock.h"
 #include "ctty.h"
 #include "util.h"
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -22,8 +23,6 @@
 /*----------------------------------------------------------------------------*/
 #define DEV_PTS_MIN 136
 #define DEV_PTS_MAX 143
-/*----------------------------------------------------------------------------*/
-#define INT_STR_BUF(t) (((sizeof(t) * 5) + 3) / 2)
 /*============================================================================*/
 static int cttyfd = -1;
 static dev_t cttydev = 0;
@@ -63,7 +62,7 @@ static dev_t get_ctty_dev(void)
   return 0;
 }
 /*----------------------------------------------------------------------------*/
-static bool set_ctty_path(char *path, bool standard)
+static bool set_ctty_path(const char *path, bool standard)
 {
   if ((cttypath = strdup(path)) != NULL)
   {
@@ -191,9 +190,9 @@ static bool try_find_ctty(void)
 static bool open_new_ctty(void)
 {
   errno = 0;
-  if (try_cmd_arg())
+  if ((cttypath != NULL) || try_cmd_arg())
   {
-    int fd = open(cttypath, O_RDWR|O_NOATIME|O_CLOEXEC);
+    int fd = open(cttypath, O_RDWR|O_NOCTTY|O_NOATIME|O_CLOEXEC);
     if (fd >= 0)
     {
       int flags;
@@ -228,16 +227,24 @@ static bool open_new_ctty(void)
 bool nclogin_ctty_init(void)
 {
   if (nclogin_config.changectty)
-    return open_new_ctty();
-  if (try_find_ctty())
-    infomsg("Identified controlling TTY device: %s\n", CTTY_NAME);
+  {
+    const char *path = nclogin_lock_path();
+    if ((path == NULL) ||
+        !(((*path == '\0') || set_ctty_path(path, true)) && open_new_ctty()))
+      return false;
+  }
   else
-    warning("Unable to identify controlling TTY device\n");
-  if (cttyfd < 0)
-    cttyfd = open("/dev/tty", O_RDONLY|O_NOATIME|O_CLOEXEC);
-  if (nclogin_config.ctty == NULL)
-    nclogin_config.ctty = cttyname;
-  return true;
+  {
+    if (try_find_ctty())
+      infomsg("Identified controlling TTY device: %s\n", CTTY_NAME);
+    else
+      warning("Unable to identify controlling TTY device\n");
+    if (cttyfd < 0)
+      cttyfd = open("/dev/tty", O_RDONLY|O_NOATIME|O_CLOEXEC);
+    if (nclogin_config.ctty == NULL)
+      nclogin_config.ctty = cttyname;
+  }
+  return nclogin_lock_init(cttyfd);
 }
 /*============================================================================*/
 bool nclogin_ctty_grab(void)
