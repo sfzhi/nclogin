@@ -31,7 +31,7 @@ static inline void update_lastlog(uid_t uid, time_t when)
     if (res < 0)
       failure("Failed to update lastlog record: %m\n");
     else if (res != sizeof(ll))
-      warning("Partially written lastlog record: %zd", res);
+      warning("Partially written lastlog record: %zd\n", res);
     close(fd);
   }
   else if (errno != ENOENT)
