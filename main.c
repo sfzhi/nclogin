@@ -25,6 +25,8 @@
 #include <syslog.h>
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #include <limits.h> // HOST_NAME_MAX
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+#include <sys/prctl.h> // prctl(), PR_?ET_DUMPABLE
 /*============================================================================*/
 config_data_t nclogin_config;
 /*============================================================================*/
@@ -86,10 +88,18 @@ static void setup_signals(void)
   ignore_signals(true);
 }
 /*============================================================================*/
+static void apply_dumpable_mode(void)
+{
+  int mode = prctl(PR_GET_DUMPABLE, 0L, 0L, 0L, 0L);
+  if ((mode >= 0) && (!mode == nclogin_config.enabledump))
+    prctl(PR_SET_DUMPABLE, (long)nclogin_config.enabledump, 0L, 0L, 0L);
+}
+/*============================================================================*/
 static int execute(void)
 {
   chdir("/");
   setup_signals();
+  apply_dumpable_mode();
 
   if (nclogin_config.term != NULL)
     setenv("TERM", nclogin_config.term, 0);
@@ -153,7 +163,7 @@ int main(int argc, char *argv[])
 {
   opterr = 0;
   int optchr;
-  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::P::pWmbBqrwsSylakx";
+  static const char optstr[] = "+:t:L:n:e:i:T:f:c:u::P::pWmbBqrdwsSylakx";
   while ((optchr = getopt(argc, argv, optstr)) != -1)
   {
     switch(optchr)
@@ -214,6 +224,9 @@ int main(int argc, char *argv[])
       break;
     case 'r':
       nclogin_config.restricted = true;
+      break;
+    case 'd':
+      nclogin_config.enabledump = true;
       break;
     case 'w':
       nclogin_config.subprocess = true;

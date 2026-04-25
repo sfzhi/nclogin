@@ -13,9 +13,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <grp.h> // initgroups()
-#include <sys/wait.h>
-#include <sys/prctl.h> // prctl()
 #include <signal.h> // raise(), SIG*
+#include <sys/wait.h> // waitpid(), W*
+#include <sys/prctl.h> // prctl(), PR_SET_PDEATHSIG
 /*============================================================================*/
 static char *makeenv(char *envbuf, size_t size, char **envp, ...)
 {
@@ -132,7 +132,7 @@ bool nclogin_user_exec(login_info_t *info)
         }
         if (nclogin_config.killorphan)
         {
-          if (prctl(PR_SET_PDEATHSIG, SIGTERM, 0, 0, 0) < 0)
+          if (prctl(PR_SET_PDEATHSIG, (long)SIGTERM, 0L, 0L, 0L) < 0)
             failure("Failed to setup parent death signal: %m\n");
           if ((getppid() == 1) && (raise(SIGTERM) != 0))
             failure("Failed to send SIGTERM to itself: %m\n");

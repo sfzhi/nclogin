@@ -40,6 +40,7 @@ typedef struct {
   bool checkboard;
   bool enablequit;
   bool restricted;
+  bool enabledump;
   bool fixedlogin;
   bool updateutmp;
   bool adjustperm;
