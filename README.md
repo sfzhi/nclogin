@@ -24,7 +24,7 @@ the binary and the manpage to wherever appropriate.
 Copyright
 =========
 
-Copyright (C) 2015-2025 Sergei Zhirikov <sfzhi@yahoo.com>
+Copyright (C) 2015-2026 Sergei Zhirikov <sfzhi@yahoo.com>
 
 License
 =======
